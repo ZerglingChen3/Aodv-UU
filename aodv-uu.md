@@ -52,7 +52,7 @@ struct in_addr {
 - rt_timer：当前路由表项的计时器，是一个 timer 结构体（这个之后会讨论到），它绑定的 callback 函数是 aodv_timeout.c 里面的 route_expire_timeout()，作用是如果对应路由表项是邻居节点，那么调用 neighbor_link_break，否则使当前的路由项无效（**总体过程就是对路由到期的处理**）。
 - ack_timer：RREP_ack 的计时器，绑定的 callback 是 rrep_ack_timeout()，作用是把该路由表项的目的节点地址加入黑名单（之后会讨论到）
 - hello_timer：hello 消息的计时器，绑定的 callback 是 hello_timeout()
-- last_hello_time：
+- last_hello_time：上一个hello消息的时间单元
 - hello_cnt：收到的hello消息数量？
 - hash：一个哈希值，用来快速定位这个路由表项
 - nprec：先驱节点（也就是这样的节点，它们也有到达同样目标地址的路由表项，并且下一跳是这个节点）数目
@@ -122,7 +122,7 @@ struct in_addr {
 - timer_queue_init：未实现（不过在 timer_queue.c 里面定义了一个链表头 TQ）
 - timer_init
   * 用来初始化一个 timer
-  * 设置处理函数等
+  * 对于不同的时钟设置不同的处理函数等
 - timer_timeout
   * 当一个 timer 到时的时候调用的函数
   * 把某个时间前的所有 timer 都移除，并且调用他们的处理函数
@@ -182,20 +182,26 @@ struct in_addr {
 
 ### aodv_hello.{h, c}
 
-在 aodvuu 协议中，节点会定时广播一个 hello 消息用于维护和邻居的拓扑性质，具体体现在，aodv_hello.c 里面定义了一个 hello 专属的 timer：hello_timer，它初始化的时候会绑定一个 hello_send 函数，然后调用 hello_send。每次执行 hello_send 时，在最后又会给 hello_timer 重新 timer_set_timeout 一下，相当于再次设置了一个定时，这样实现了定时发送的功能（这个定时其实不准确，因为实际上它还在 HELLO_INTERVAL 上加了个 jitter）。
+在 aodvuu 协议中，节点-4会定时广播一个 hello 消息用于维护和邻居的拓扑性质，具体体现在，aodv_hello.c 里面定义了一个 hello 专属的 timer：hello_timer，它初始化的时候会绑定一个 hello_send 函数，然后调用 hello_send。每次执行 hello_send 时，在最后又会给 hello_timer 重新 timer_set_timeout 一下，相当于再次设置了一个定时，这样实现了定时发送的功能（这个定时其实不准确，因为实际上它还在 HELLO_INTERVAL 上加了个 jitter）。
 
 另外 hello 消息实际上是一个 RREP 消息。
 
 这两个文件里面定义了如下一些函数：
 
+- hello_jitter
+  - 如果hello_jittering为真则产生一个抖动的值，在[-50, 50]之间
+  - 否则不产生抖动
 - hello_start
   * 初始化 hello_timer
+  * 调用hello_send函数进行消息的发送
 - hello_stop
   * 从 timer_queue 中移除 hello_timer，相当于停止定时发送 hello 消息
 - hello_send
-  * 首先要在当前时间减去上一次广播时间大于等于 HELLO_INTERVAL 时才进行 HELLO 消息的发送
-  * 发送 hello 消息前首先遍历所有接口，然后生成一个目的节点地址和序列号都是自己的 RREP，lifetime 设置为 ALLOWED_HELLO_LOSS * HELLO_INTERVAL，然后进行广播
-  * 发送完之后重新给 hello_timer 进行 timer_set_timeout（里面还有一个 ext 消息，这里不作讨论）。
+  - 首先如果optimized_hellos是真并且当前hello消息的存活时间超过生命周期，直接调用hello_stop进行消息的自毁
+  - 首先要在当前时间减去上一次广播时间大于等于 HELLO_INTERVAL 时才进行 HELLO 消息的发送（目的是防止广播太过于频繁）
+  - 发送 hello 消息前首先遍历所有接口，然后生成一个目的节点地址和序列号都是自己的 RREP，lifetime 设置为 ALLOWED_HELLO_LOSS * HELLO_INTERVAL，然后进行广播
+  - 发送完之后重新给 hello_timer 进行 timer_set_timeout（里面还有一个 ext 消息，这里不作讨论）。
+  - 时间有可能是负的吧。
 - hello_process
   * 对 hello 消息进行处理的函数，其中最核心的是对路由表的更新吧（包括更新路由表项的 hello_timer、last_hello_time 等）
 - hello_process_non_hello
@@ -203,6 +209,12 @@ struct in_addr {
   * 在 hello_process 最后会调用这个函数，更新路由表项里面的 hello_timer
 
 总而言之，这两个文件是专门用来处理 hello 消息的，而 hello 消息的作用是用来维护邻居信息，主要更新和操作的是路由表。
+
+hello消息后面有不止一个扩展域ext，由ext->type来决定消息类型。
+
+- RREP_HELLO_INTERVAL_EXT：记录Hello时间间隔的，长度为4位。
+
+- RREP_HELLO_NEIGHBOR_SET_EXT：记录邻居信息，ext->length为邻居个数
 
 ***
 
