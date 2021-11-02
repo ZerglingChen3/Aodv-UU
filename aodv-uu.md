@@ -20,6 +20,8 @@ struct in_addr {
 
 这是C++自带的一个表示IPV4地址的结构体。
 
+所有消息的格式和AODV_msg格式应该是相同的。
+
 除此之外，该文件还定义了如下一些东西：
 
 - MAX_NR_INTERFACE：最大网络接口数
@@ -238,17 +240,28 @@ RREQ 消息格式
 
 定义了 rreq_record 结构体（包含源节点地址、rreq_id 和一个 rec_timer），并且定义了该结构体的链表头 rreq_records，这个的作用相当于对收到的 RREQ 消息进行缓存。rec_timer 绑定的处理函数是 rreq_record_timeout，该函数的作用就仅仅是把这个 record 从链表中清除，timeout 设置为 PATH_DISCOVERY_TIME。
 
-定义了 blacklist 结构体以及 rreq_blacklist 链表头，顾名思义这是一个黑名单，这个黑名单的作用是这样的（这是我的理解）：由于路由可能是单向的，所以一个节点收到 RREQ 之后可能无法返还 RREP 消息，而每个节点对于同一个 rreq_id 只会处理第一个，这就导致在寻路的时候可能存在合法的双向路径，但是被忽略了。所以当一个节点发送 RREP 消息而不被下一跳接收到时，就会把下一跳结点的地址加入黑名单，表示之后的一段时间内（BLACKLIST_TIMEOUT），都不接受它的 RREQ 消息，这就解决了上述问题。而 BLACKLIST_TIMEOUT 的时间设置应当为允许多次寻路之后的时间上限。所以加入黑名单只在等不到 RREP_ack 消息的时候进行，也就是说只有 rrep_ack_timeout 会调用它。
+定义了 blacklist 结构体以及 rreq_blacklist 链表头，顾名思义这是一个黑名单，这个黑名单的作用是这样的（这是我的理解）：由于路由可能是**单向**的，所以一个节点收到 RREQ 之后可能无法返还 RREP 消息，而每个节点对于同一个 rreq_id 只会处理第一个，这就导致在寻路的时候可能存在合法的双向路径，但是被忽略了。所以当一个节点发送 RREP 消息而不被下一跳接收到时，就会把下一跳结点的地址加入黑名单，表示之后的一段时间内（BLACKLIST_TIMEOUT），都不接受它的 RREQ 消息，这就解决了上述问题。而 BLACKLIST_TIMEOUT 的时间设置应当为允许多次寻路之后的时间上限。所以加入黑名单只在等不到 RREP_ack 消息的时候进行，也就是说只有 rrep_ack_timeout 会调用它。
+
+RREQ消息的四类属性：
+
+- RREQ_JOIN：为多播保留
+- RREQ_REPAIR：为多播保留
+- RREQ_GRATUITOUS：
+- RREQ_DEST_ONLY：
 
 定义了若干个函数：
 
 - rreq_create
   * 生成并返回一个 RREQ 消息结构体，生成的时候自己的 seqno 要加一
+  * 本机的序列号和rreq_id有什么区别？
+- rreq_add_ext
+  - 给RREQ消息后面增加扩展域
 - rreq_send
   * 遍历所有接口
   * 生成 RREQ 消息
   * 调用 aodv_socket_send 进行广播（广播只需要把 aodv_socket_send 的 dest 地址设置为 AODV_BROADCAST）
 - rreq_forward
+  * 把RREQ 消息向前传播
   * 把 RREQ 消息里面的 hcnt 加一，然后遍历所有接口进行广播
 - rreq_process
   * 如果这个 RREQ 是自己发出去的就丢弃
