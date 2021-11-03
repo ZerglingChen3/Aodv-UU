@@ -216,7 +216,7 @@ hello消息后面有不止一个扩展域ext，由ext->type来决定消息类型
 
 - RREP_HELLO_INTERVAL_EXT：记录Hello时间间隔的，长度为4位。
 
-- RREP_HELLO_NEIGHBOR_SET_EXT：记录邻居信息，ext->length为邻居个数
+- RREP_HELLO_NEIGHBOR_SET_EXT：记录邻居信息，ext->length为扩展数据大小，ext->length/4是邻居个数
 
 ***
 
