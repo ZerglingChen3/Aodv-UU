@@ -1,0 +1,184 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define CONSOLE
+int Normal, Package, Noise, Move;
+void init() {
+    printf("Mac/802_11 set dataRate_ 5.4e6 ;# rate for data frames in Mbps\n");
+    printf("set val(chan) Channel/WirelessChannel ;# channel type\n");
+    printf("set val(prop) Propagation/TwoRayGround ;# radio-propagation model\n");
+    printf("set val(netif) Phy/WirelessPhy ;# network interface type\n");
+    printf("set val(mac) Mac/802_11 ;# MAC type\n");
+    printf("set val(ifq) Queue/DropTail/PriQueue ;# interface queue type\n");
+    printf("set val(ll) LL ;# link layer type\n");
+    printf("set val(ant) Antenna/OmniAntenna ;# antenna model\n");
+    printf("set val(ifqlen) 50 ;# max packet in ifq\n");
+    printf("set val(rp) AODVUU ;# routing protocol\n");
+    printf("set val(x) 3000 ;# X dimension of topography\n");
+    printf("set val(y) 3000 ;# Y dimension of topography\n");
+    printf("set val(stop) 42 ;# nam stop time\n");
+    printf("set val(nn) %d ;# number of mobilenodes\n", Normal+Noise);
+    printf("set val(nc) 3 ;# number of channels\n");
+    printf("set val(ni) 3 ;# number of interfaces, <= number of channels\n");
+    printf("set pktsize 1000 ;# packet size in bytes\n");
+    printf("set pktrate 0.01 ;# packet rate in seconds\n");
+    printf("set filename test\n");
+    printf("puts 'Ad-Hoc Wireless Network in Chain Topologies - $val(nn) Nodes, $val(nc) Channels, $val(ni) Interfaces'\n");
+
+    printf("set ns_ [new Simulator]\n");
+    printf("set topo [new Topography]\n");
+    printf("$topo load_flatgrid $val(x) $val(y)\n");
+
+    printf("set god_ [create-god [expr $val(nn)*$val(nc)]]\n");
+
+    printf("set tracefd [open $filename.tr w]\n");
+
+    printf("$ns_ trace-all $tracefd\n");
+    printf("$ns_ use-newtrace\n");
+    printf("set namfile [open $filename.nam w]\n");
+    printf("$ns_ namtrace-all $namfile\n");
+    printf("$ns_ namtrace-all-wireless $namfile $val(x) $val(y)\n");
+    string forPattern = string("for {set i 0} {$i < $val(nc)} {incr i} {\n") +
+                     "set chan($i) [new $val(chan)]\n" +
+                     "}\n"; 
+    printf(forPattern.c_str());
+    string nsPattern = string("$ns_ node-config -adhocRouting $val(rp) \\ \n") +
+                       "-llType $val(ll) \\ \n" +
+                       "-macType $val(mac) \\ \n" +
+                       "-ifqType $val(ifq) \\ \n" +
+                       "-ifqLen $val(ifqlen) \\ \n" +
+                       "-antType $val(ant) \\ \n" +
+                       "-propType $val(prop) \\ \n" +
+                       "-phyType $val(netif) \\ \n" +
+                       "-channel $chan(0) \\ \n" +
+                       "-topoInstance $topo \\ \n" +
+                       "-agentTrace ON \\ \n" + 
+                       "-routerTrace ON \\ \n" +
+                       "-macTrace OFF \\ \n" +
+                       "-movementTrace OFF \\ \n" +
+                       "-ifNum $val(ni)    \\ \n" +
+                       "-workMode 0 \\ \n" +
+                       "-noiseChannel 0";
+    printf(nsPattern.c_str());
+    printf("puts 'begin to add channel'\n");
+    printf("$ns_ change-numifs $val(nc)");
+    forPattern = string("for {set i 0} {$i < $val(nc)} {incr i} {\n") + 
+                 "$ns_ add-channel $i $chan($i)\n" + 
+                 "}\n";
+    printf(forPattern.c_str());
+    printf("puts \"begin to create nodes\"\n");
+    forPattern = string("for {set i 0} {$i < $val(nn)} {incr i} {\n") +
+                 "  set n($i) [$ns_ node]\n" +
+                 "  $god_ new_node $n($i)\n" +
+                 "}\n";
+    printf(forPattern.c_str());
+    printf("puts 'created nodes'\n");
+    printf("set nodedist 250\n");
+}
+
+void finish() {
+    printf("set last_node_id [expr $val(nn)-1]\n");
+    printf("proc finish {} {\n");
+    printf("global ns_ tracefd filename pktsize last_node_id\n");
+    printf("    global namfile\n");
+    printf("    $ns_ flush-trace\n");
+    printf("    close $tracefd\n");
+    printf("    close $namfile\n");
+    printf("    exec nam $filename.nam &\n");
+    printf("    exit 0\n");
+    printf("}\n");
+    printf("for {set i 0} {$i < $val(nn) } { incr i } {\n");
+    printf("    $ns_ at $val(stop) \"$n($i) reset\"\n");
+    printf("}\n"); 
+    printf("$ns_ at $val(stop) \"$ns_ nam-end-wireless $val(stop)\"\n");
+    printf("$ns_ at $val(stop) \"finish\"");
+    printf("$ns_ at $val(stop) \"puts \\\"done\\\" ; $ns_ halt\"\n");
+    printf("$ns_ run\n");
+}
+
+int main() {
+    #ifndef CONSOLE
+    freopen("config.txt", "r", stdin);
+    freopen("test.tcl", "w", stdout);
+    #endif
+
+    #ifdef CONSOLE
+    scanf("请输入正常节点数、边数、噪点数和运动数:\n%d%d%d\n", &Normal, &Package, &Noise, &Move);
+    #else
+    scanf("%d%d%d\n", &Normal, &Package, &Noise);
+    #endif
+
+    init();
+    /*
+    set points
+    */
+    printf("\n");
+    for (int i = 0; i < Normal; ++ i) {
+        int x, y, size = 25;
+        #ifdef CONSOLE
+        scanf("请输入各节点的坐标:\n%d%d\n", &x, &y);
+        #else
+        scanf("%d%d\n", &x, &y);
+        #endif
+        printf("$n(%d) set X_ %d\n", i, x);
+        printf("$n(%d) set Y_ %d\n", i, y);
+        printf("$n(%d) set Z_ %d\n", i, 0);
+        printf("$ns_ initial_node_pos $n(%d) %d\n", i, size);
+        printf("$n(%d) random-motion %d\n", i, 0);
+    }
+    
+    // todo
+    for (int i = 0; i < Noise; ++ i) {
+
+    }
+    
+    /*
+    set packages
+    */
+    printf("\n");
+    for (int i = 0; i < Package; ++ i) {
+        int s, t;
+        double T1, T2;
+        #ifdef CONSOLE
+        scanf("请输入数据包的源节点和目的节点，开始传播时间和结束传播时间:\n%d%d%lf%lf\n", &s, &t, &T1, &T2);
+        #else
+        scanf("%d%d%lf%lf\n", &s, &t, &T1, &T2);
+        #endif        
+        string udp = "udp" + to_string(i);
+        string sink = "sink" + to_string(i);
+        string cbr = "cbr" + to_string(i);
+        string sou = "$n(" + to_string(s) + ')';
+        string tar = "$n(" + to_string(t) + ')';
+        printf("set %s [new Agent/UDP]\n", udp);
+        printf("$ns_ attach-agent %s %s\n", sou, udp);
+        printf("set %s [new Agent/Null]\n", sink);
+        printf("$ns_ attach-agent %s %s\n", tar, sink);
+        printf("$ns_ connect %s %s\n", sou, tar);
+        printf("set %s [new Application/Traffic/CBR]\n", cbr);
+        printf("%s attach-agent %s\n", cbr, udp);
+        printf("%s set packetSize_ $pktsize\n", cbr);
+        printf("%s set interval_ $pktrate\n", cbr);
+        printf("$ns_ at %lf \"%s start\"\n", T1, cbr);
+        printf("$ns_ at %lf \"%s stop\"\n", T2, cbr);
+        printf("\n");
+    }
+
+    /*
+    set moves
+    */
+    for (int i = 0; i < Move; ++ i) {
+        double tm;
+        int pt, x, y, v;
+        #ifdef CONSOLE
+        scanf("请输入移动开始时间、运动节点编号、目标位置坐标和速度:\n%lf%d%d%d%d\n", &tm, &pt, &x, &y, &v);
+        #else
+        scanf("%lf%d%d%d%d\n", &tm, &pt, &x, &y, &v);
+        #endif          
+        printf("$ns_ at %lf \"$n(%d) setdest %d %d %d\"\n", tm, pt, x, y, v);
+    }
+    printf("\n");
+
+    finish();
+    return 0;
+}
