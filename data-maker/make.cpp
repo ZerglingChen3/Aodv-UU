@@ -2,7 +2,7 @@
 
 using namespace std;
 
-#define CONSOLE
+//define CONSOLE
 int Normal, Package, Noise, Move;
 void init() {
     printf("Mac/802_11 set dataRate_ 5.4e6 ;# rate for data frames in Mbps\n");
@@ -24,7 +24,7 @@ void init() {
     printf("set pktsize 1000 ;# packet size in bytes\n");
     printf("set pktrate 0.01 ;# packet rate in seconds\n");
     printf("set filename test\n");
-    printf("puts 'Ad-Hoc Wireless Network in Chain Topologies - $val(nn) Nodes, $val(nc) Channels, $val(ni) Interfaces'\n");
+    printf("puts \"Ad-Hoc Wireless Network in Chain Topologies - $val(nn) Nodes, $val(nc) Channels, $val(ni) Interfaces\"\n");
 
     printf("set ns_ [new Simulator]\n");
     printf("set topo [new Topography]\n");
@@ -43,28 +43,28 @@ void init() {
                      "set chan($i) [new $val(chan)]\n" +
                      "}\n"; 
     printf(forPattern.c_str());
-    string nsPattern = string("$ns_ node-config -adhocRouting $val(rp) \\ \n") +
-                       "-llType $val(ll) \\ \n" +
-                       "-macType $val(mac) \\ \n" +
-                       "-ifqType $val(ifq) \\ \n" +
-                       "-ifqLen $val(ifqlen) \\ \n" +
-                       "-antType $val(ant) \\ \n" +
-                       "-propType $val(prop) \\ \n" +
-                       "-phyType $val(netif) \\ \n" +
-                       "-channel $chan(0) \\ \n" +
-                       "-topoInstance $topo \\ \n" +
-                       "-agentTrace ON \\ \n" + 
-                       "-routerTrace ON \\ \n" +
-                       "-macTrace OFF \\ \n" +
-                       "-movementTrace OFF \\ \n" +
-                       "-ifNum $val(ni)    \\ \n" +
-                       "-workMode 0 \\ \n" +
-                       "-noiseChannel 0";
+    string nsPattern = string("$ns_ node-config -adhocRouting $val(rp) \\\n") +
+                       "-llType $val(ll) \\\n" +
+                       "-macType $val(mac) \\\n" +
+                       "-ifqType $val(ifq) \\\n" +
+                       "-ifqLen $val(ifqlen) \\\n" +
+                       "-antType $val(ant) \\\n" +
+                       "-propType $val(prop) \\\n" +
+                       "-phyType $val(netif) \\\n" +
+                       "-channel $chan(0) \\\n" +
+                       "-topoInstance $topo \\\n" +
+                       "-agentTrace ON \\\n" + 
+                       "-routerTrace ON \\\n" +
+                       "-macTrace OFF \\\n" +
+                       "-movementTrace OFF \\\n" +
+                       "-ifNum $val(ni)    \\\n" +
+                       "-workMode 0 \\\n" +
+                       "-noiseChannel 0 \n";
     printf(nsPattern.c_str());
-    printf("puts 'begin to add channel'\n");
-    printf("$ns_ change-numifs $val(nc)");
+    printf("puts \"begin to add channel\"\n");
+    printf("$ns_ change-numifs $val(nc)\n");
     forPattern = string("for {set i 0} {$i < $val(nc)} {incr i} {\n") + 
-                 "$ns_ add-channel $i $chan($i)\n" + 
+                 "  $ns_ add-channel $i $chan($i)\n" + 
                  "}\n";
     printf(forPattern.c_str());
     printf("puts \"begin to create nodes\"\n");
@@ -73,7 +73,7 @@ void init() {
                  "  $god_ new_node $n($i)\n" +
                  "}\n";
     printf(forPattern.c_str());
-    printf("puts 'created nodes'\n");
+    printf("puts \"created nodes\"\n");
     printf("set nodedist 250\n");
 }
 
@@ -92,7 +92,7 @@ void finish() {
     printf("    $ns_ at $val(stop) \"$n($i) reset\"\n");
     printf("}\n"); 
     printf("$ns_ at $val(stop) \"$ns_ nam-end-wireless $val(stop)\"\n");
-    printf("$ns_ at $val(stop) \"finish\"");
+    printf("$ns_ at $val(stop) \"finish\"\n");
     printf("$ns_ at $val(stop) \"puts \\\"done\\\" ; $ns_ halt\"\n");
     printf("$ns_ run\n");
 }
@@ -106,7 +106,7 @@ int main() {
     #ifdef CONSOLE
     scanf("请输入正常节点数、边数、噪点数和运动数:\n%d%d%d\n", &Normal, &Package, &Noise, &Move);
     #else
-    scanf("%d%d%d\n", &Normal, &Package, &Noise);
+    scanf("%d%d%d%d\n", &Normal, &Package, &Noise, &Move);
     #endif
 
     init();
@@ -150,17 +150,17 @@ int main() {
         string cbr = "cbr" + to_string(i);
         string sou = "$n(" + to_string(s) + ')';
         string tar = "$n(" + to_string(t) + ')';
-        printf("set %s [new Agent/UDP]\n", udp);
-        printf("$ns_ attach-agent %s %s\n", sou, udp);
-        printf("set %s [new Agent/Null]\n", sink);
-        printf("$ns_ attach-agent %s %s\n", tar, sink);
-        printf("$ns_ connect %s %s\n", sou, tar);
-        printf("set %s [new Application/Traffic/CBR]\n", cbr);
-        printf("%s attach-agent %s\n", cbr, udp);
-        printf("%s set packetSize_ $pktsize\n", cbr);
-        printf("%s set interval_ $pktrate\n", cbr);
-        printf("$ns_ at %lf \"%s start\"\n", T1, cbr);
-        printf("$ns_ at %lf \"%s stop\"\n", T2, cbr);
+        printf("set %s [new Agent/UDP]\n", udp.c_str());
+        printf("$ns_ attach-agent %s $%s\n", sou.c_str(), udp.c_str());
+        printf("set %s [new Agent/Null]\n", sink.c_str());
+        printf("$ns_ attach-agent %s $%s\n", tar.c_str(), sink.c_str());
+        printf("$ns_ connect $%s $%s\n", udp.c_str(), sink.c_str());
+        printf("set %s [new Application/Traffic/CBR]\n", cbr.c_str());
+        printf("$%s attach-agent $%s\n", cbr.c_str(), udp.c_str());
+        printf("$%s set packetSize_ $pktsize\n", cbr.c_str());
+        printf("$%s set interval_ $pktrate\n", cbr.c_str());
+        printf("$ns_ at %lf \"$%s start\"\n", T1, cbr.c_str());
+        printf("$ns_ at %lf \"$%s stop\"\n", T2, cbr.c_str());
         printf("\n");
     }
 
