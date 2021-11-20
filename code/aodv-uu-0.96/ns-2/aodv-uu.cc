@@ -162,8 +162,10 @@ tqtimer(this), ifqueue(0)
 	packet_queue_init();
 
 	// Added by buaa g410
-	nIfaces = 0;
+	/* Modified by MSQ */
+	nIfaces = 3;
 	fixed_interface = 0;
+	/* End MSQ */
 }
 
 
@@ -464,8 +466,7 @@ void NS_CLASS sendPacket(Packet *p, struct in_addr next_hop, double delay)
 	/* End buaa g410 */
 }
 
-/* Add by MSQ */
-/* Sends a packet using the specified next hop and delay */
+/* Added by MSQ */
 void NS_CLASS sendPacket_new(Packet *p, struct in_addr next_hop, double delay, int channel)
 {
 	struct hdr_cmn *ch = HDR_CMN(p);
@@ -501,6 +502,7 @@ void NS_CLASS sendPacket_new(Packet *p, struct in_addr next_hop, double delay, i
 		return;
 	}
 
+	/* Modified by buaa g410 */
 	/* Set packet fields depending on packet type */
 	if (dest_addr.s_addr == AODV_BROADCAST) {
 		/* Broadcast packet */
@@ -508,7 +510,6 @@ void NS_CLASS sendPacket_new(Packet *p, struct in_addr next_hop, double delay, i
 		ch->prev_hop_ = DEV_NR(NS_DEV_NR).ipaddr.s_addr;
 		ch->addr_type() = NS_AF_NONE;
 		jitter = 0.02 * Random::uniform();
-		/* 如果是广播，对三条信道都进行 packet 的发送 */
 		for (int i = 0; i < nIfaces; i++) {
 			Scheduler::instance().schedule(lllist[i], p, jitter);
 		}
@@ -522,10 +523,9 @@ void NS_CLASS sendPacket_new(Packet *p, struct in_addr next_hop, double delay, i
 			ch->xmit_failure_ = link_layer_callback;
 			ch->xmit_failure_data_ = (void *) this;
 		}
-		/* 如果是单播，根据传进来的 channel 数进行发送 */
 		if (nIfaces > 0) {
 			Scheduler::instance().schedule(lllist[channel], p, delay);
-		}
+		} 
 	}
 }
 /* End MSQ */
