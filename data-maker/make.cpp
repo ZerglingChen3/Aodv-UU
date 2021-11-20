@@ -15,8 +15,8 @@ void init() {
     printf("set val(ant) Antenna/OmniAntenna ;# antenna model\n");
     printf("set val(ifqlen) 50 ;# max packet in ifq\n");
     printf("set val(rp) AODVUU ;# routing protocol\n");
-    printf("set val(x) 3000 ;# X dimension of topography\n");
-    printf("set val(y) 3000 ;# Y dimension of topography\n");
+    printf("set val(x) 700 ;# X dimension of topography\n");
+    printf("set val(y) 700 ;# Y dimension of topography\n");
     printf("set val(stop) 42 ;# nam stop time\n");
     printf("set val(nn) %d ;# number of mobilenodes\n", Normal+Noise);
     printf("set val(nc) 3 ;# number of channels\n");
@@ -67,7 +67,15 @@ void init() {
                  "}\n";
     printf(forPattern.c_str());
     printf("puts \"begin to create nodes\"\n");
-    forPattern = string("for {set i 0} {$i < $val(nn)} {incr i} {\n") +
+    forPattern = string("for {set i 0} {$i < ") + to_string(Normal) + "} {incr i} {\n" +
+                 "  set n($i) [$ns_ node]\n" +
+                 "  $god_ new_node $n($i)\n" +
+                 "}\n";
+    printf(forPattern.c_str());
+    nsPattern = string("$ns_ node-config -workMode -1 \\\n") +
+                       "-noiseChannel 0 \n"; //this place we can change the disturb channel, now it set to 0
+    printf(nsPattern.c_str());
+    forPattern = string("for {set i ") + to_string(Normal) + "} {$i < " + to_string(Normal+Noise) + "} {incr i} {\n" +
                  "  set n($i) [$ns_ node]\n" +
                  "  $god_ new_node $n($i)\n" +
                  "}\n";
@@ -113,7 +121,7 @@ int main() {
     set points
     */
     printf("\n");
-    for (int i = 0; i < Normal; ++ i) {
+    for (int i = 0; i < Normal+Noise; ++ i) {
         int x, y, size = 25;
         #ifdef CONSOLE
         scanf("请输入各节点的坐标:\n%d%d\n", &x, &y);
@@ -127,11 +135,6 @@ int main() {
         printf("$n(%d) random-motion %d\n", i, 0);
     }
     
-    // todo
-    for (int i = 0; i < Noise; ++ i) {
-
-    }
-    
     /*
     set packages
     */
@@ -143,7 +146,7 @@ int main() {
         #ifdef CONSOLE
         scanf("请输入数据包的源节点和目的节点，开始传播时间，结束传播时间，包数据类型:\n%d%d%lf%lf%s\n", &s, &t, &T1, &T2, type);
         #else
-        scanf("%d%d%lf%lf\n", &s, &t, &T1, &T2);
+        scanf("%d%d%lf%lf%s", &s, &t, &T1, &T2, type);
         #endif        
         if (type[0] == 'T') {
             string tcp = "tcp" + to_string(i);
