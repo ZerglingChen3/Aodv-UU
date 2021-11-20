@@ -182,7 +182,6 @@ int main() {
             printf("$ns_ at %lf \"$%s stop\"\n", T2, cbr.c_str());
             printf("\n");
         }
-    }
 
     /*
     set moves
