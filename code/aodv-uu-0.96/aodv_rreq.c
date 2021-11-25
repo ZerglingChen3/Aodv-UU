@@ -114,6 +114,65 @@ AODV_ext *rreq_add_ext(RREQ * rreq, int type, unsigned int offset,
     return ext;
 }
 
+/* modifed by chenjiyuan 11.24 */
+RREQ *NS_CLASS rreq_create_with_cost(u_int8_t flags, struct in_addr dest_addr,
+                            u_int32_t dest_seqno, struct in_addr orig_addr, double cost) {
+    RREQ *rreq;
+
+    rreq = (RREQ *) aodv_socket_new_msg();
+    rreq->type = AODV_RREQ;
+    rreq->res1 = 0;
+    rreq->res2 = 0;
+    rreq->hcnt = 0;
+    rreq->rreq_id = htonl(this_host.rreq_id++);
+    rreq->dest_addr = dest_addr.s_addr;
+    rreq->dest_seqno = htonl(dest_seqno);
+    rreq->orig_addr = orig_addr.s_addr;
+
+    /* Immediately before a node originates a RREQ flood it must
+       increment its sequence number... */
+    seqno_incr(this_host.seqno);
+    rreq->orig_seqno = htonl(this_host.seqno);
+
+    if (flags & RREQ_JOIN)
+        rreq->j = 1;
+    if (flags & RREQ_REPAIR)
+        rreq->r = 1;
+    if (flags & RREQ_GRATUITOUS)
+        rreq->g = 1;
+    if (flags & RREQ_DEST_ONLY)
+        rreq->d = 1;
+
+    AODV_ext* ext = rreq_add_ext(rreq, RREQ_COST_EXT, RREQ_SIZE, sizeof(cost), (char*)&cost);
+
+    /*
+    DEBUG(LOG_DEBUG, 0, "Assembled RREQ %s", ip_to_str(dest_addr));
+#ifdef DEBUG_OUTPUT
+    log_pkt_fields((AODV_msg *) rreq);
+#endif
+    */
+    return rreq;
+}
+/* end modifed at 11.24*/
+
+/* modifed by chenjiyuan 11.26 */
+RREQ *NS_CLASS rreq_copy_with_cost(RREQ *package) {
+    AODV_ext *ext = (AODV_ext *) ((char *) package + RREQ_SIZE);
+    double cost = *((double*)(AODV_EXT_DATA(ext)));
+    struct in_addr addr;
+    addr.s_addr = 0;
+    RREQ *rreq = rreq_create_with_cost(0, addr, package->dest_seqno, addr, cost);
+    rreq->dest_addr = package->dest_addr;
+    rreq->orig_addr = package->orig_addr;
+    rreq->j = package->j;
+    rreq->r = package->r;
+    rreq->g = package->g;
+    rreq->d = package->d;
+    return rreq;
+}
+
+/* end modifed at 11.26*/
+
 void NS_CLASS rreq_send(struct in_addr dest_addr, u_int32_t dest_seqno,
 			int ttl, u_int8_t flags)
 {
@@ -158,7 +217,7 @@ void NS_CLASS rreq_forward(RREQ * rreq, int size, int ttl)
     for (i = 0; i < MAX_NR_INTERFACES; i++) {
 	if (!DEV_NR(i).enabled)
 	    continue;
-	aodv_socket_send((AODV_msg *) rreq, dest, size, ttl, &DEV_NR(i));
+    aodv_socket_send((AODV_msg *) rreq, dest, size, ttl, &DEV_NR(i));
     }
 }
 
@@ -183,6 +242,9 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     rreq_orig_seqno = ntohl(rreq->orig_seqno);
     rreq_new_hcnt = rreq->hcnt + 1;
 
+    /* modified by chenjiyuan 11.24 */
+    int channel;
+    /* end modified*/
 
     /* Ignore RREQ's that originated from this node. Either we do this
        or we buffer our own sent RREQ's as we do with others we
@@ -209,12 +271,17 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     }
 
     /* Ignore already processed RREQs. */
+    /* modified by chenjiyuan 11.23*/
+    /*
     if (rreq_record_find(rreq_orig, rreq_id))
-	return;
+	    return;
 
-    /* Now buffer this RREQ so that we don't process a similar RREQ we
-       get within PATH_DISCOVERY_TIME. */
+    // Now buffer this RREQ so that we don't process a similar RREQ we
+    // get within PATH_DISCOVERY_TIME.
+
     rreq_record_insert(rreq_orig, rreq_id);
+    */
+    /*@ end modify*/
 
 	/*@ modify by chenjiyuan */
 	double cost = log(MAX_NUM);
@@ -229,7 +296,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	/*@ modify by chenjiyuan */
 	case RREQ_COST_EXT:
 	    DEBUG(LOG_INFO, 0, "RREQ include EXTENSION");
-	    cost = *(double*)((char *) AODV_EXT_DATA(ext));
+	    cost = *(double*)((char *) AODV_EXT_DATA(ext)) + getCost(this_host, rreq_dest, channel);
 		break;
 	/*@ end modify*/
 
@@ -245,13 +312,22 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	extlen += AODV_EXT_SIZE(ext);
 	ext = AODV_EXT_NEXT(ext);
     }
+
+    /* modified by chenjiyuan 11.23*/
+    if (rreq_record_find_less_cost(rreq_orig, rreq_id, cost))
+        return;
+    rreq_record_insert(rreq_orig, rreq_id);
+    /*@ end modify*/
+
 #ifdef DEBUG_OUTPUT
     log_pkt_fields((AODV_msg *) rreq);
 #endif
 
     /* The node always creates or updates a REVERSE ROUTE entry to the
        source of the RREQ. */
-    rev_rt = rt_table_find(rreq_orig);
+    /* modified by chenjiyuan 11.26*/
+    rev_rt = rt_table_find(rreq_orig, channel);
+    /*@ end modify*/
 
     /* Calculate the extended minimal life time. */
     life = PATH_DISCOVERY_TIME - 2 * rreq_new_hcnt * NODE_TRAVERSAL_TIME;
@@ -263,14 +339,26 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	rev_rt = rt_table_insert(rreq_orig, ip_src, rreq_new_hcnt,
 				 rreq_orig_seqno, life, VALID, 0, ifindex);
     } else {
-	if (rev_rt->dest_seqno == 0 ||
+        /* modified by chenjiyuan 11.24*/
+        /*
+        if (rev_rt->dest_seqno == 0 ||
 	    (int32_t) rreq_orig_seqno > (int32_t) rev_rt->dest_seqno ||
 	    (rreq_orig_seqno == rev_rt->dest_seqno &&
 	     (rev_rt->state == INVALID || rreq_new_hcnt < rev_rt->hcnt))) {
 	    rev_rt = rt_table_update(rev_rt, ip_src, rreq_new_hcnt,
 				     rreq_orig_seqno, life, VALID,
 				     rev_rt->flags);
-	}
+         */
+        if (rev_rt->dest_seqno == 0 ||
+            (int32_t) rreq_orig_seqno > (int32_t) rev_rt->dest_seqno ||
+            (rreq_orig_seqno == rev_rt->dest_seqno &&
+             (rev_rt->state == INVALID || cost < rev_rt->cost))) {
+            rev_rt = rt_table_update(rev_rt, ip_src, rreq_new_hcnt,
+                                     rreq_orig_seqno, life, VALID,
+                                     rev_rt->flags);
+            /* end modified at 11.24 */
+
+        }
 #ifdef DISABLED
 	/* This is a out of draft modification of AODV-UU to prevent
 	   nodes from creating routing entries to themselves during
@@ -343,7 +431,9 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	/* We are an INTERMEDIATE node. - check if we have an active
 	 * route entry */
 
-	fwd_rt = rt_table_find(rreq_dest);
+    /* modified by chenjiyuan 11.26*/
+    fwd_rt = rt_table_find(rreq_dest, channel);
+    /* @end modified */
 
 	if (fwd_rt && fwd_rt->state == VALID && !rreq->d) {
 	    struct timeval now;
@@ -446,7 +536,13 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 	return;
 
     /* If we already have a route entry, we use information from it. */
-    rt = rt_table_find(dest_addr);
+    /* modified by chenjiyuan 11.26*/
+    for (int i = 0; i < 3; ++ i) {
+        rt = rt_table_find(dest_addr);
+        if (rt)
+            break;
+    }
+    /*@ end modified */
 
     ttl = NET_DIAMETER;		/* This is the TTL if we don't use expanding
 				   ring search */
@@ -583,6 +679,57 @@ NS_STATIC struct rreq_record *NS_CLASS rreq_record_insert(struct in_addr
     timer_set_timeout(&rec->rec_timer, PATH_DISCOVERY_TIME);
     return rec;
 }
+
+/* modified by chenjiyuan at 11.24*/
+NS_STATIC struct rreq_record *NS_CLASS rreq_record_insert(struct in_addr
+                                                          orig_addr,
+                                                          u_int32_t rreq_id,
+                                                          double cost)
+{
+    struct rreq_record *rec;
+
+    /* First check if this rreq packet is already buffered */
+    rec = rreq_record_find(orig_addr, rreq_id);
+
+    /* If already buffered, should we update the timer???  */
+    if (rec)
+        return rec;
+
+    if ((rec =
+                 (struct rreq_record *) malloc(sizeof(struct rreq_record))) == NULL) {
+        fprintf(stderr, "Malloc failed!!!\n");
+        exit(-1);
+    }
+    rec->orig_addr = orig_addr;
+    rec->rreq_id = rreq_id;
+    rec->cost = cost;
+
+    timer_init(&rec->rec_timer, &NS_CLASS rreq_record_timeout, rec);
+
+    list_add(&rreq_records, &rec->l);
+
+    DEBUG(LOG_INFO, 0, "Buffering RREQ %s rreq_id=%lu time=%u",
+          ip_to_str(orig_addr), rreq_id, PATH_DISCOVERY_TIME);
+
+    timer_set_timeout(&rec->rec_timer, PATH_DISCOVERY_TIME);
+    return rec;
+}
+
+NS_STATIC struct rreq_record *NS_CLASS rreq_record_find_less_cost(struct in_addr
+                                                        orig_addr,
+                                                        u_int32_t rreq_id, double cost)
+{
+    list_t *pos;
+
+    list_foreach(pos, &rreq_records) {
+        struct rreq_record *rec = (struct rreq_record *) pos;
+        if (rec->orig_addr.s_addr == orig_addr.s_addr &&
+            (rec->rreq_id == rreq_id) && (rec->cost < cost))
+            return rec;
+    }
+    return NULL;
+}
+/* end modified */
 
 NS_STATIC struct rreq_record *NS_CLASS rreq_record_find(struct in_addr
 							orig_addr,

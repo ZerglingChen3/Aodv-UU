@@ -76,6 +76,48 @@ RREP *NS_CLASS rrep_create(u_int8_t flags,
     return rrep;
 }
 
+/* modifed by chenjiyuan 11.26 */
+RREP *NS_CLASS rrep_create_with_cost(u_int8_t flags,
+                           u_int8_t prefix,
+                           u_int8_t hcnt,
+                           struct in_addr dest_addr,
+                           u_int32_t dest_seqno,
+                           struct in_addr orig_addr,
+                           u_int32_t life,
+                           double cost)
+{
+    RREP *rrep;
+
+    rrep = (RREP *) aodv_socket_new_msg();
+    rrep->type = AODV_RREP;
+    rrep->res1 = 0;
+    rrep->res2 = 0;
+    rrep->prefix = prefix;
+    rrep->hcnt = hcnt;
+    rrep->dest_addr = dest_addr.s_addr;
+    rrep->dest_seqno = htonl(dest_seqno);
+    rrep->orig_addr = orig_addr.s_addr;
+    rrep->lifetime = htonl(life);
+
+    if (flags & RREP_REPAIR)
+        rrep->r = 1;
+    if (flags & RREP_ACK)
+        rrep->a = 1;
+
+    AODV_ext* ext = rrep_add_ext(rrep, RREP_COST_EXT, RREP_SIZE, sizeof(cost), (char*)&cost);
+
+    /* Don't print information about hello messages... */
+#ifdef DEBUG_OUTPUT
+    if (rrep->dest_addr != rrep->orig_addr) {
+	DEBUG(LOG_DEBUG, 0, "Assembled RREP:");
+	log_pkt_fields((AODV_msg *) rrep);
+    }
+#endif
+
+    return rrep;
+}
+/* end modifed*/
+
 RREP_ack *NS_CLASS rrep_ack_create()
 {
     RREP_ack *rrep_ack;

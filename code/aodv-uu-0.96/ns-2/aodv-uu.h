@@ -268,4 +268,10 @@ inline int NS_CLASS ifindex2devindex(unsigned int ifindex)
 	return -1;
 }
 
+/*@ modified by chenjiyuan:11.23*/
+inline double getCost(host_info hostInfo, struct in_addr dst, int channel) {
+    return channel;
+}
+/* end modified*/
+
 #endif /* AODV_UU_H */
