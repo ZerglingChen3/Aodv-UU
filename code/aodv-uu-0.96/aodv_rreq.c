@@ -293,7 +293,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     while ((rreqlen - extlen) > RREQ_SIZE) {
 	switch (ext->type) {
 	
-	/*@ modify by chenjiyuan */
+	/*@ modify by chenjiyuan 12.26*/
 	case RREQ_COST_EXT:
 	    DEBUG(LOG_INFO, 0, "RREQ include EXTENSION");
 	    cost = *(double*)((char *) AODV_EXT_DATA(ext)) + getCost(this_host, rreq_dest, channel);
@@ -336,8 +336,14 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	DEBUG(LOG_DEBUG, 0, "Creating REVERSE route entry, RREQ orig: %s",
 	      ip_to_str(rreq_orig));
 
+    /* modified by chenjiyuan 11.26*/
+    /*
 	rev_rt = rt_table_insert(rreq_orig, ip_src, rreq_new_hcnt,
 				 rreq_orig_seqno, life, VALID, 0, ifindex);
+    */
+    rev_rt = rt_table_insert(rreq_orig, ip_src, rreq_new_hcnt,
+                             rreq_orig_seqno, life, VALID, 0, ifindex, cost);
+    /* end modified*/
     } else {
         /* modified by chenjiyuan 11.24*/
         /*
@@ -421,7 +427,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	    else if (this_host.seqno == rreq_dest_seqno)
 		seqno_incr(this_host.seqno);
 	}
-	rrep = rrep_create(0, 0, 0, DEV_IFINDEX(rev_rt->ifindex).ipaddr,
+    rrep = rrep_create(0, 0, 0, DEV_IFINDEX(rev_rt->ifindex).ipaddr,
 			   this_host.seqno, rev_rt->dest_addr,
 			   MY_ROUTE_TIMEOUT);
 
