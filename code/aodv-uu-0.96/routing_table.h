@@ -103,6 +103,17 @@ rt_table_t *rt_table_insert(struct in_addr dest, struct in_addr next,
 			    u_int8_t hops, u_int32_t seqno, u_int32_t life,
 			    u_int8_t state, u_int16_t flags,
 			    unsigned int ifindex);
+/*@ modified by chenjiyuan:11.23*/
+rt_table_t *rt_table_insert(struct in_addr dest, struct in_addr next,
+                            u_int8_t hops, u_int32_t seqno, u_int32_t life,
+                            u_int8_t state, u_int16_t flags,
+                            unsigned int ifindex, int channel, double cost);
+rt_table_t *rt_table_update(rt_table_t * rt, struct in_addr next, u_int8_t hops,
+                            u_int32_t seqno, u_int32_t lifetime, u_int8_t state,
+                            u_int16_t flags, int channel, double cost);
+rt_table_t *rt_table_find(struct in_addr dest, int channel);
+/* end modified by chenjiyuan*/
+
 rt_table_t *rt_table_update(rt_table_t * rt, struct in_addr next, u_int8_t hops,
 			    u_int32_t seqno, u_int32_t lifetime, u_int8_t state,
 			    u_int16_t flags);

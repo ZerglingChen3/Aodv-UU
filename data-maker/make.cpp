@@ -15,8 +15,8 @@ void init() {
     printf("set val(ant) Antenna/OmniAntenna ;# antenna model\n");
     printf("set val(ifqlen) 50 ;# max packet in ifq\n");
     printf("set val(rp) AODVUU ;# routing protocol\n");
-    printf("set val(x) 3000 ;# X dimension of topography\n");
-    printf("set val(y) 3000 ;# Y dimension of topography\n");
+    printf("set val(x) 700 ;# X dimension of topography\n");
+    printf("set val(y) 700 ;# Y dimension of topography\n");
     printf("set val(stop) 42 ;# nam stop time\n");
     printf("set val(nn) %d ;# number of mobilenodes\n", Normal+Noise);
     printf("set val(nc) 3 ;# number of channels\n");
@@ -51,7 +51,6 @@ void init() {
                        "-antType $val(ant) \\\n" +
                        "-propType $val(prop) \\\n" +
                        "-phyType $val(netif) \\\n" +
-                       "-channel $chan(0) \\\n" +
                        "-topoInstance $topo \\\n" +
                        "-agentTrace ON \\\n" + 
                        "-routerTrace ON \\\n" +
@@ -68,7 +67,15 @@ void init() {
                  "}\n";
     printf(forPattern.c_str());
     printf("puts \"begin to create nodes\"\n");
-    forPattern = string("for {set i 0} {$i < $val(nn)} {incr i} {\n") +
+    forPattern = string("for {set i 0} {$i < ") + to_string(Normal) + "} {incr i} {\n" +
+                 "  set n($i) [$ns_ node]\n" +
+                 "  $god_ new_node $n($i)\n" +
+                 "}\n";
+    printf(forPattern.c_str());
+    nsPattern = string("$ns_ node-config -workMode -1 \\\n") +
+                       "-noiseChannel 0 \n"; //this place we can change the disturb channel, now it set to 0
+    printf(nsPattern.c_str());
+    forPattern = string("for {set i ") + to_string(Normal) + "} {$i < " + to_string(Normal+Noise) + "} {incr i} {\n" +
                  "  set n($i) [$ns_ node]\n" +
                  "  $god_ new_node $n($i)\n" +
                  "}\n";
@@ -114,7 +121,7 @@ int main() {
     set points
     */
     printf("\n");
-    for (int i = 0; i < Normal; ++ i) {
+    for (int i = 0; i < Normal+Noise; ++ i) {
         int x, y, size = 25;
         #ifdef CONSOLE
         scanf("请输入各节点的坐标:\n%d%d\n", &x, &y);
@@ -128,11 +135,6 @@ int main() {
         printf("$n(%d) random-motion %d\n", i, 0);
     }
     
-    // todo
-    for (int i = 0; i < Noise; ++ i) {
-
-    }
-    
     /*
     set packages
     */
@@ -140,28 +142,49 @@ int main() {
     for (int i = 0; i < Package; ++ i) {
         int s, t;
         double T1, T2;
+        char type[5];
         #ifdef CONSOLE
-        scanf("请输入数据包的源节点和目的节点，开始传播时间和结束传播时间:\n%d%d%lf%lf\n", &s, &t, &T1, &T2);
+        scanf("请输入数据包的源节点和目的节点，开始传播时间，结束传播时间，包数据类型:\n%d%d%lf%lf%s\n", &s, &t, &T1, &T2, type);
         #else
-        scanf("%d%d%lf%lf\n", &s, &t, &T1, &T2);
+        scanf("%d%d%lf%lf%s", &s, &t, &T1, &T2, type);
         #endif        
-        string udp = "udp" + to_string(i);
-        string sink = "sink" + to_string(i);
-        string cbr = "cbr" + to_string(i);
-        string sou = "$n(" + to_string(s) + ')';
-        string tar = "$n(" + to_string(t) + ')';
-        printf("set %s [new Agent/UDP]\n", udp.c_str());
-        printf("$ns_ attach-agent %s $%s\n", sou.c_str(), udp.c_str());
-        printf("set %s [new Agent/Null]\n", sink.c_str());
-        printf("$ns_ attach-agent %s $%s\n", tar.c_str(), sink.c_str());
-        printf("$ns_ connect $%s $%s\n", udp.c_str(), sink.c_str());
-        printf("set %s [new Application/Traffic/CBR]\n", cbr.c_str());
-        printf("$%s attach-agent $%s\n", cbr.c_str(), udp.c_str());
-        printf("$%s set packetSize_ $pktsize\n", cbr.c_str());
-        printf("$%s set interval_ $pktrate\n", cbr.c_str());
-        printf("$ns_ at %lf \"$%s start\"\n", T1, cbr.c_str());
-        printf("$ns_ at %lf \"$%s stop\"\n", T2, cbr.c_str());
-        printf("\n");
+        if (type[0] == 'T') {
+            string tcp = "tcp" + to_string(i);
+            string sink = "sink" + to_string(i);
+            string cbr = "cbr" + to_string(i);
+            string sou = "$n(" + to_string(s) + ')';
+            string tar = "$n(" + to_string(t) + ')';
+            printf("set %s [new Agent/TCP]\n", tcp.c_str());
+            printf("$ns_ attach-agent %s $%s\n", sou.c_str(), tcp.c_str());
+            printf("set %s [new Agent/TCPSink]\n", sink.c_str());
+            printf("$ns_ attach-agent %s $%s\n", tar.c_str(), sink.c_str());
+            printf("$ns_ connect $%s $%s\n", tcp.c_str(), sink.c_str());
+            printf("set %s [new Application/Traffic/CBR]\n", cbr.c_str());
+            printf("$%s attach-agent $%s\n", cbr.c_str(), tcp.c_str());
+            printf("$%s set packetSize_ $pktsize\n", cbr.c_str());
+            printf("$%s set interval_ $pktrate\n", cbr.c_str());
+            printf("$ns_ at %lf \"$%s start\"\n", T1, cbr.c_str());
+            printf("$ns_ at %lf \"$%s stop\"\n", T2, cbr.c_str());
+            printf("\n");
+        } else {
+            string udp = "udp" + to_string(i);
+            string sink = "sink" + to_string(i);
+            string cbr = "cbr" + to_string(i);
+            string sou = "$n(" + to_string(s) + ')';
+            string tar = "$n(" + to_string(t) + ')';
+            printf("set %s [new Agent/UDP]\n", udp.c_str());
+            printf("$ns_ attach-agent %s $%s\n", sou.c_str(), udp.c_str());
+            printf("set %s [new Agent/Null]\n", sink.c_str());
+            printf("$ns_ attach-agent %s $%s\n", tar.c_str(), sink.c_str());
+            printf("$ns_ connect $%s $%s\n", udp.c_str(), sink.c_str());
+            printf("set %s [new Application/Traffic/CBR]\n", cbr.c_str());
+            printf("$%s attach-agent $%s\n", cbr.c_str(), udp.c_str());
+            printf("$%s set packetSize_ $pktsize\n", cbr.c_str());
+            printf("$%s set interval_ $pktrate\n", cbr.c_str());
+            printf("$ns_ at %lf \"$%s start\"\n", T1, cbr.c_str());
+            printf("$ns_ at %lf \"$%s stop\"\n", T2, cbr.c_str());
+            printf("\n");
+        }
     }
 
     /*
