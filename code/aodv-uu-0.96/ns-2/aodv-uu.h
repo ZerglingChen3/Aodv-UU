@@ -23,6 +23,9 @@
 #ifndef _AODV_UU_H
 #define _AODV_UU_H
 
+/* Number of channel */
+#define Channel_Count 3
+
 /* Constants for interface queue packet buffering/dropping */
 #define IFQ_BUFFER 0
 #define IFQ_DROP 1
