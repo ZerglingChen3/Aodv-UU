@@ -232,8 +232,13 @@ typedef AODV_msg hdr_aodvuu;	// Name convention for headers
 #endif
 
 /* AODV Extension types */
-#define RREQ_EXT 1
-#define RREP_EXT 1
+/*@ modify by chenjiyuan */
+#define RREQ_COST_EXT 1
+#define RREQ_EXT 2
+#define RREP_COST_EXT 1
+#define RREP_EXT 2
+/*@ end modify*/
+
 #define RREP_HELLO_INTERVAL_EXT 2
 #define RREP_HELLO_NEIGHBOR_SET_EXT 3
 #define RREP_INET_DEST_EXT 4
@@ -256,5 +261,9 @@ typedef struct {
 typedef void (*callback_func_t) (int);
 extern int attach_callback_func(int fd, callback_func_t func);
 #endif
+
+/*@ modify by chenjiyuan */
+#define MAX_NUM 1e18
+/*@ end modify*/
 
 #endif				/* DEFS_H */

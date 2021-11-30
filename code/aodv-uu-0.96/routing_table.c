@@ -193,7 +193,7 @@ rt_table_t *NS_CLASS rt_table_insert(struct in_addr dest_addr,
 }
 
 /*@ modified by chenjiyuan:11.23*/
-rt_table_t *NS_CLASS rt_table_insert(struct in_addr dest_addr,
+rt_table_t *NS_CLASS rt_table_insert_with_channel(struct in_addr dest_addr,
                                      struct in_addr next,
                                      u_int8_t hops, u_int32_t seqno,
                                      u_int32_t life, u_int8_t state,
@@ -304,7 +304,7 @@ rt_table_t *NS_CLASS rt_table_insert(struct in_addr dest_addr,
     return rt;
 }
 
-rt_table_t *NS_CLASS rt_table_update(rt_table_t * rt, struct in_addr next,
+rt_table_t *NS_CLASS rt_table_update_with_channel(rt_table_t * rt, struct in_addr next,
                                      u_int8_t hops, u_int32_t seqno,
                                      u_int32_t lifetime, u_int8_t state,
                                      u_int16_t flags, int channel, double cost)
@@ -606,7 +606,7 @@ rt_table_t *NS_CLASS rt_table_find_less_cost(struct in_addr dest_addr) {
     return ret;
 }
 
-rt_table_t *NS_CLASS rt_table_find(struct in_addr dest_addr, int channel)
+rt_table_t *NS_CLASS rt_table_find_with_channel(struct in_addr dest_addr, int channel)
 {
     hash_value hash;
     unsigned int index;

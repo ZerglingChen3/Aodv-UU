@@ -207,7 +207,7 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 	}
 	/* End MSQ */
 
-    rt = rt_table_find(hello_dest);
+    rt = rt_table_find(hello_dest); //todo: set channel
 
     if (rt)
 	flags = rt->flags;
@@ -277,7 +277,7 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 	   new entry... */
 
 	rt = rt_table_insert(hello_dest, hello_dest, 1,
-			     hello_seqno, timeout, state, flags, ifindex);
+			     hello_seqno, timeout, state, flags, ifindex); //todo: set channel
 
 	if (flags & RT_UNIDIR) {
 	    DEBUG(LOG_INFO, 0, "%s new NEIGHBOR, link UNI-DIR",
@@ -303,7 +303,7 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 	    memcpy(&rt->last_hello_time, &now, sizeof(struct timeval));
 	    return;
 	}
-	rt_table_update(rt, hello_dest, 1, hello_seqno, timeout, VALID, flags);
+	rt_table_update(rt, hello_dest, 1, hello_seqno, timeout, VALID, flags); //todo: set channel
     }
 
   hello_update:

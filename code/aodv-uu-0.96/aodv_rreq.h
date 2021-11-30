@@ -72,6 +72,7 @@ struct rreq_record {
     struct in_addr orig_addr;	/* Source of the RREQ */
     u_int32_t rreq_id;		/* RREQ's broadcast ID */
     struct timer rec_timer;
+    double cost;
 };
 
 struct blacklist {
@@ -90,9 +91,9 @@ RREQ *rreq_create_with_cost(u_int8_t flags, struct in_addr dest_addr,
 /* end modifed at 11.24*/
 /* modifed by chenjiyuan 11.29 */
 RREQ *rreq_copy_with_cost(RREQ *package);
-void rreq_send(struct in_addr dest_addr, u_int32_t dest_seqno, int ttl,
+void rreq_send_with_channel(struct in_addr dest_addr, u_int32_t dest_seqno, int ttl,
                u_int8_t flags, int channel);
-void rreq_forward(RREQ * rreq, int size, int ttl, int channel);
+void rreq_forward_with_channel(RREQ * rreq, int size, int ttl, int channel);
 void rreq_forward_with_cost(RREQ * rreq, int size, int ttl);
 /* end modifed at 11.29*/
 void rreq_send(struct in_addr dest_addr, u_int32_t dest_seqno, int ttl,
@@ -114,6 +115,12 @@ struct rreq_record *rreq_record_insert(struct in_addr orig_addr,
 struct rreq_record *rreq_record_find(struct in_addr orig_addr,
 				     u_int32_t rreq_id);
 struct blacklist *rreq_blacklist_find(struct in_addr dest_addr);
+/* modifed by chenjiyuan 11.24 */
+struct rreq_record *rreq_record_insert_with_cost(struct in_addr orig_addr,
+				       u_int32_t rreq_id, double cost);
+struct rreq_record *rreq_record_find_less_cost(struct in_addr orig_addr,
+				     u_int32_t rreq_id, double cost);
+/* end modifed */
 #endif				/* NS_PORT */
 
 #endif				/* NS_NO_DECLARATIONS */

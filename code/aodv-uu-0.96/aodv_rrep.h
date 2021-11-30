@@ -94,7 +94,7 @@ RREP_ack *rrep_ack_create();
 AODV_ext *rrep_add_ext(RREP * rrep, int type, unsigned int offset,
 		       int len, char *data);
 /* modified by chenjiyuan 11.29 */
-void rrep_send(RREP * rrep, rt_table_t * rev_rt, rt_table_t * fwd_rt, int size, int channel);
+void rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt, rt_table_t * fwd_rt, int size, int channel);
 /*@ end modified*/
 void rrep_send(RREP * rrep, rt_table_t * rev_rt, rt_table_t * fwd_rt, int size);
 void rrep_forward(RREP * rrep, int size, rt_table_t * rev_rt,

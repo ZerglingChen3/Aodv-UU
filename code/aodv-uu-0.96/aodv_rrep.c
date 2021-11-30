@@ -168,7 +168,7 @@ AODV_ext *NS_CLASS rrep_add_ext(RREP * rrep, int type, unsigned int offset,
 }
 
 /* modifed by chenjiyuan 11.29 */
-void NS_CLASS rrep_send(RREP * rrep, rt_table_t * rev_rt,
+void NS_CLASS rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt,
                         rt_table_t * fwd_rt, int size, int channel)
 {
     u_int8_t rrep_flags = 0;
@@ -184,7 +184,7 @@ void NS_CLASS rrep_send(RREP * rrep, rt_table_t * rev_rt,
     /* Check if we should request a RREP-ACK */
     if ((rev_rt->state == VALID && rev_rt->flags & RT_UNIDIR) ||
         (rev_rt->hcnt == 1 && unidir_hack)) {
-        rt_table_t *neighbor = rt_table_find(rev_rt->next_hop, channel);
+        rt_table_t *neighbor = rt_table_find_with_channel(rev_rt->next_hop, channel);
 
         if (neighbor && neighbor->state == VALID && !neighbor->ack_timer.used) {
             /* If the node we received a RREQ for is a neighbor we are
@@ -433,7 +433,7 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
     /* ---------- CHECK IF WE SHOULD MAKE A FORWARD ROUTE ------------ */
 
     /*@ modify by chenjiyuan at 11.30 */
-    fwd_rt = rt_table_find(rrep_dest, channel);
+    fwd_rt = rt_table_find_with_channel(rrep_dest, channel);
     rev_rt = rt_table_find_less_cost(rrep_orig);
     //fwd_rt = rt_table_find(rrep_dest);
     //rev_rt = rt_table_find(rrep_orig);
@@ -444,7 +444,7 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
     /*@ modify by chenjiyuan at 11.30 */
         /*fwd_rt = rt_table_insert(rrep_dest, ip_src, rrep_new_hcnt, rrep_seqno,
 				 rrep_lifetime, VALID, rt_flags, ifindex);*/
-        fwd_rt = rt_table_insert(rrep_dest, ip_src, rrep_new_hcnt, rrep_seqno,
+        fwd_rt = rt_table_insert_with_channel(rrep_dest, ip_src, rrep_new_hcnt, rrep_seqno,
                                  rrep_lifetime, VALID, rt_flags, ifindex, channel, cost);
     /* end modify at 11.30 */
     } else if (fwd_rt->dest_seqno == 0 ||
@@ -460,7 +460,7 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
     fwd_rt = rt_table_update(fwd_rt, ip_src, rrep_new_hcnt, rrep_seqno,
 				 rrep_lifetime, VALID,
 				 rt_flags | fwd_rt->flags); */
-    fwd_rt = rt_table_update(fwd_rt, ip_src, rrep_new_hcnt, rrep_seqno,
+    fwd_rt = rt_table_update_with_channel(fwd_rt, ip_src, rrep_new_hcnt, rrep_seqno,
                              rrep_lifetime, VALID,
                              rt_flags | fwd_rt->flags, channel, cost);
     } else {

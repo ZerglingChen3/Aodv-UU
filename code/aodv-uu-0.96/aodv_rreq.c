@@ -174,7 +174,7 @@ RREQ *NS_CLASS rreq_copy_with_cost(RREQ *package) {
 /* end modifed at 11.26*/
 
 /* modifed by chenjiyuan 11.29 */
-void NS_CLASS rreq_send(struct in_addr dest_addr, u_int32_t dest_seqno,
+void NS_CLASS rreq_send_with_channel(struct in_addr dest_addr, u_int32_t dest_seqno,
                         int ttl, u_int8_t flags, int channel)
 {
     RREQ *rreq;
@@ -282,7 +282,7 @@ void NS_CLASS rreq_forward_with_cost(RREQ * rreq, int size, int ttl)
 /* end modified at 11.30 */
 
 /* modifed by chenjiyuan 11.29 */
-void NS_CLASS rreq_forward(RREQ * rreq, int size, int ttl, int channel)
+void NS_CLASS rreq_forward_with_channel(RREQ * rreq, int size, int ttl, int channel)
 {
     struct in_addr dest, orig;
     int i;
@@ -410,7 +410,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     if (rreq_record_find_less_cost(rreq_orig, rreq_id, cost))
         return;
     //rreq_record_insert(rreq_orig, rreq_id);
-    rreq_record_insert(rreq_orig, rreq_id, cost);
+    rreq_record_insert_with_cost(rreq_orig, rreq_id, cost);
     /*@ end modify*/
 
 #ifdef DEBUG_OUTPUT
@@ -420,7 +420,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     /* The node always creates or updates a REVERSE ROUTE entry to the
        source of the RREQ. */
     /* modified by chenjiyuan 11.26*/
-    rev_rt = rt_table_find(rreq_orig, channel);
+    rev_rt = rt_table_find_with_channel(rreq_orig, channel);
     /*@ end modify*/
 
     /* Calculate the extended minimal life time. */
@@ -435,7 +435,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	rev_rt = rt_table_insert(rreq_orig, ip_src, rreq_new_hcnt,
 				 rreq_orig_seqno, life, VALID, 0, ifindex);
     */
-    rev_rt = rt_table_insert(rreq_orig, ip_src, rreq_new_hcnt,
+    rev_rt = rt_table_insert_with_channel(rreq_orig, ip_src, rreq_new_hcnt,
                              rreq_orig_seqno, life, VALID, 0, ifindex, channel, cost);
     /* end modified*/
     } else {
@@ -456,7 +456,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
             /*rev_rt = rt_table_update(rev_rt, ip_src, rreq_new_hcnt,
                                      rreq_orig_seqno, life, VALID,
                                      rev_rt->flags);*/
-            rev_rt = rt_table_update(rev_rt, ip_src, rreq_new_hcnt,
+            rev_rt = rt_table_update_with_channel(rev_rt, ip_src, rreq_new_hcnt,
                                      rreq_orig_seqno, life, VALID,
                                      rev_rt->flags, channel, cost);
             /* end modified at 11.24 */
@@ -535,7 +535,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
                        MY_ROUTE_TIMEOUT, 0);
 
 	//rrep_send(rrep, rev_rt, NULL, RREP_SIZE);
-    rrep_send(rrep, rev_rt, NULL, RREP_SIZE, channel);
+    rrep_send_with_channel(rrep, rev_rt, NULL, RREP_SIZE, channel);
     /* end modified at 11.29*/
 
     } else {
@@ -609,8 +609,8 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
                            fwd_rt->dest_seqno, rev_rt->dest_addr,
                            lifetime, fwd_rt->cost);
 
-            //rrep_send(rrep, rev_rt, fwd_rt, rrep_size);
-	    rrep_send(rrep, rev_rt, fwd_rt, RREQ_COST_SIZE, next_channel);
+        //rrep_send(rrep, rev_rt, fwd_rt, rrep_size);
+	    rrep_send_with_channel(rrep, rev_rt, fwd_rt, RREQ_COST_SIZE, next_channel);
         /* end modified by chenjiyuan at 11.26*/
         } else {
 		goto forward;
@@ -627,7 +627,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
         rrep = rrep_create_with_cost(0, 0, rev_rt->hcnt, rev_rt->dest_addr,
                            rev_rt->dest_seqno, fwd_rt->dest_addr,
                            lifetime, fwd_rt->cost);
-		rrep_send(rrep, fwd_rt, rev_rt, RREP_SIZE, next_channel);
+		rrep_send_with_channel(rrep, fwd_rt, rev_rt, RREP_SIZE, next_channel);
         /* end modified by chenjiyuan at 11.29*/
 
             DEBUG(LOG_INFO, 0, "Sending G-RREP to %s with rte to %s",
@@ -646,7 +646,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
         /* modified by chenjiyuan 11.29*/
         //rreq_forward(rreq, rreqlen, --ip_ttl);
         for (int i = 0; i < Channel_Count; ++ i)
-            rreq_forward(rreq, RREQ_COST_SIZE, ip_ttl-1, i);
+            rreq_forward_with_channel(rreq, RREQ_COST_SIZE, ip_ttl-1, i);
         ip_ttl--;
         /* end modified at 11.29*/
 	} else {
@@ -707,7 +707,7 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 
     /* modified by chenjiyuan 11.29*/
     for (int i = 0; i < Channel_Count; ++ i)
-        rreq_send(dest_addr, dest_seqno, ttl, flags, i);
+        rreq_send_with_channel(dest_addr, dest_seqno, ttl, flags, i);
     /* end modified at 11.29*/
 
     /* Remember that we are seeking this destination */
@@ -820,7 +820,7 @@ NS_STATIC struct rreq_record *NS_CLASS rreq_record_insert(struct in_addr
 }
 
 /* modified by chenjiyuan at 11.24*/
-NS_STATIC struct rreq_record *NS_CLASS rreq_record_insert(struct in_addr
+NS_STATIC struct rreq_record *NS_CLASS rreq_record_insert_with_cost(struct in_addr
                                                           orig_addr,
                                                           u_int32_t rreq_id,
                                                           double cost)
