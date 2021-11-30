@@ -163,8 +163,9 @@ tqtimer(this), ifqueue(0)
 
 	// Added by buaa g410
 	/* Modified by MSQ */
-	nIfaces = 3;
+	nIfaces = 0;
 	fixed_interface = 0;
+	channelNum = 0;
 	/* End MSQ */
 }
 
@@ -398,6 +399,7 @@ void NS_CLASS recv(Packet *p, Handler *)
 	scheduleNextEvent();
 }
 
+/* Modified by MSQ */
 /* Sends a packet using the specified next hop and delay */
 void NS_CLASS sendPacket(Packet *p, struct in_addr next_hop, double delay)
 {
@@ -442,10 +444,10 @@ void NS_CLASS sendPacket(Packet *p, struct in_addr next_hop, double delay)
 		ch->prev_hop_ = DEV_NR(NS_DEV_NR).ipaddr.s_addr;
 		ch->addr_type() = NS_AF_NONE;
 		jitter = 0.02 * Random::uniform();
-		if (nIfaces > 0) {
-			Scheduler::instance().schedule(lllist[fixed_interface], p, jitter);
-		} else {
-			Scheduler::instance().schedule(ll, p, jitter);
+		for (int i = 0; i < nIfaces; i++) {
+			Packet *pp = p->copy();
+			pp->channel = i;
+			Scheduler::instance().schedule(lllist[i], pp, jitter);
 		}
 	} else {
 		/* Unicast packet */
@@ -457,76 +459,11 @@ void NS_CLASS sendPacket(Packet *p, struct in_addr next_hop, double delay)
 			ch->xmit_failure_ = link_layer_callback;
 			ch->xmit_failure_data_ = (void *) this;
 		}
-		if (nIfaces > 0) {
-			Scheduler::instance().schedule(lllist[fixed_interface], p, delay);
-		} else {
-			Scheduler::instance().schedule(ll, p, delay);
-		}
+		Packet *pp = p->copy();
+		pp->channel = channelNum;
+		Scheduler::instance().schedule(lllist[channelNum], pp, delay);
 	}
 	/* End buaa g410 */
-}
-
-/* Added by MSQ */
-void NS_CLASS sendPacket_new(Packet *p, struct in_addr next_hop, double delay, int channel)
-{
-	struct hdr_cmn *ch = HDR_CMN(p);
-	struct hdr_ip *ih = HDR_IP(p);
-	struct in_addr dest_addr, src_addr;
-	double jitter = 0.0;
-
-	dest_addr.s_addr = ih->daddr();
-	src_addr.s_addr = ih->saddr();
-
-	// Act network layer, check for forwarding
-	if (ch->direction() == hdr_cmn::UP &&
-		src_addr.s_addr != DEV_IFINDEX(ifindex).ipaddr.s_addr) {
-		// We are forwarding a packet
-		ih->ttl()--;
-
-		if (ih->ttl() < 1) {
-			DEBUG(LOG_WARNING, 0, "Dropping packet with TTL = 0.");
-			drop(p, DROP_RTR_TTL);
-			return;
-		}
-		// Change direction of forwarded packet
-		ch->direction() = hdr_cmn::DOWN;
-
-	} else if (ch->direction() == hdr_cmn::DOWN &&
-			   src_addr.s_addr == DEV_IFINDEX(ifindex).ipaddr.s_addr) {
-		// Seems like we are originating this packet. Nothing
-		// to do really
-	} else {
-		// Undefined behavior. Should complain and drop packet
-		DEBUG(LOG_WARNING, 0, "Undefined packet behavior!");
-		drop(p);
-		return;
-	}
-
-	/* Modified by buaa g410 */
-	/* Set packet fields depending on packet type */
-	if (dest_addr.s_addr == AODV_BROADCAST) {
-		/* Broadcast packet */
-		ch->next_hop_ = 0;
-		ch->prev_hop_ = DEV_NR(NS_DEV_NR).ipaddr.s_addr;
-		ch->addr_type() = NS_AF_NONE;
-		jitter = 0.02 * Random::uniform();
-		for (int i = 0; i < nIfaces; i++) {
-			Scheduler::instance().schedule(lllist[i], p, jitter);
-		}
-	} else {
-		/* Unicast packet */
-		ch->next_hop_ = next_hop.s_addr;
-		ch->prev_hop_ = DEV_NR(NS_DEV_NR).ipaddr.s_addr;
-		ch->addr_type() = NS_AF_INET;
-
-		if (llfeedback) {
-			ch->xmit_failure_ = link_layer_callback;
-			ch->xmit_failure_data_ = (void *) this;
-		}
-		if (nIfaces > 0) {
-			Scheduler::instance().schedule(lllist[channel], p, delay);
-		} 
-	}
 }
 /* End MSQ */
 
@@ -614,7 +551,8 @@ int NS_CLASS startAODVUUAgent()
 				  DELETE_PERIOD);
 		}
 		/* Schedule the first HELLO */
-		if (!llfeedback && !optimized_hellos)
+		//printf("llfeedback is %d, optimized_hellos is %d\n", llfeedback, optimized_hellos);
+		//if (!llfeedback && !optimized_hellos)
 			hello_start();
 
 		/* Initialize routing table logging */

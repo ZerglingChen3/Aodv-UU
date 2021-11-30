@@ -397,6 +397,12 @@ public:
     void trace_event(char *, Packet *);
     EventTrace *et_;
 
+    /* Added by MSQ */
+    int getState();
+    double getSNR();
+
+    /* End MSQ */
+
 protected:
     void	backoffHandler(void);
     void	deferHandler(void);
@@ -656,6 +662,15 @@ private:
     /* End buaa g410 */
     /* Added by MSQ */
     int channelNum;
+    int signalNum;
+    int noiseNum;
+    double channelSignal1;
+    double channelSignal2;
+    double channelSignal3;
+    double channelNoise1;
+    double channelNoise2;
+    double channelNoise3;
+    int isNoise;
     /* End MSQ */
 
 };
