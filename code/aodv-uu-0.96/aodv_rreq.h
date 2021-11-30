@@ -35,16 +35,12 @@
 #define RREQ_REPAIR        0x2
 #define RREQ_GRATUITOUS    0x4
 #define RREQ_DEST_ONLY     0x8
-//modified by mjw
-#define RREQ_LOCAL_REPAIR  0x16
 
 typedef struct {
+    u_int8_t channel;
     u_int8_t type;
 #if defined(__LITTLE_ENDIAN)
-    //modified by
-    u_int8_t res1:3;
-    u_int8_t lr:1;
-    //mjw
+    u_int8_t res1:4;
     u_int8_t d:1;
     u_int8_t g:1;
     u_int8_t r:1;
@@ -54,10 +50,7 @@ typedef struct {
     u_int8_t r:1;		/* Repair flag */
     u_int8_t g:1;		/* Gratuitous RREP flag */
     u_int8_t d:1;		/* Destination only respond */
-    //modified by 
-    u_int8_t lr:1;
-    u_int8_t res1:3;
-    //mjw
+    u_int8_t res1:4;
 #else
 #error "Adjust your <bits/endian.h> defines"
 #endif
@@ -68,29 +61,9 @@ typedef struct {
     u_int32_t dest_seqno;
     u_int32_t orig_addr;
     u_int32_t orig_seqno;
-    //modified by mjw
-    u_int32_t dest_count; //初始值是1，后面udest_ext数量是 dest_count-1
- } RREQ;
+} RREQ;
 
 #define RREQ_SIZE sizeof(RREQ)
-
-//modified by mjw
-/*寻路时要一并寻找的节点*/
-typedef struct {
-    u_int32_t dest_addr;
-    u_int32_t dest_seqno;
-    u_int8_t if_valid;
-} RREQ_udest;
-
-#define RREQ_UDEST_SIZE sizeof(RREQ_udest)
-
-#define RREQ_CALC_SIZE(rreq) (RREQ_SIZE + (rreq->dest_count-1)*RREQ_UDEST_SIZE)
-#define RREQ_UDEST_FIRST(rreq) ((RREQ_udest *)&rreq->dest_addr)
-#define RREQ_UDEST_NEXT(udest) ((RREQ_udest *)((char *)udest + RREQ_UDEST_SIZE))
-
-#define RREQ_EXT_OFFSET(rreq) (AODV_EXT_HDR_SIZE*(rreq->dest_count-1+1) \
-	+ sizeof(double) + RREQ_CALC_SIZE(rreq))
-//end modified
 
 /* A data structure to buffer information about received RREQ's */
 struct rreq_record {
@@ -98,9 +71,6 @@ struct rreq_record {
     struct in_addr orig_addr;	/* Source of the RREQ */
     u_int32_t rreq_id;		/* RREQ's broadcast ID */
     struct timer rec_timer;
-    /* modified by chenjiyuan 11.23*/
-    double cost;
-    /* end modified by chenjiyuan 11.23*/
 };
 
 struct blacklist {
@@ -113,22 +83,9 @@ struct blacklist {
 #ifndef NS_NO_DECLARATIONS
 RREQ *rreq_create(u_int8_t flags, struct in_addr dest_addr,
 		  u_int32_t dest_seqno, struct in_addr orig_addr);
-/* modifed by chenjiyuan 11.24 */
-RREQ *rreq_create_with_cost(u_int8_t flags, struct in_addr dest_addr,
-                  u_int32_t dest_seqno, struct in_addr orig_addr, double cost);
-/* end modifed at 11.24*/
-/* modifed by chenjiyuan 11.26 */
-RREQ *rreq_copy_with_cost(RREQ *package);
-/* end modifed at 11.26*/
-//modified by mjw
-void rreq_add_udest(RREQ * rreq, struct in_addr udest,
-			     u_int32_t udest_seqno);
-
 void rreq_send(struct in_addr dest_addr, u_int32_t dest_seqno, int ttl,
 	       u_int8_t flags);
 void rreq_forward(RREQ * rreq, int size, int ttl);
-void rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
-		  struct in_addr ip_dst, int ip_ttl, unsigned int ifindex);
 void rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 		  struct in_addr ip_dst, int ip_ttl, unsigned int ifindex);
 void rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
@@ -142,12 +99,6 @@ void rreq_local_repair(rt_table_t * rt, struct in_addr src_addr,
 #ifdef NS_PORT
 struct rreq_record *rreq_record_insert(struct in_addr orig_addr,
 				       u_int32_t rreq_id);
-/* modifed by chenjiyuan 11.24 */
-struct rreq_record *rreq_record_insert(struct in_addr orig_addr,
-				       u_int32_t rreq_id, double cost);
-struct rreq_record *rreq_record_find_less_cost(struct in_addr orig_addr,
-				     u_int32_t rreq_id, double cost);
-/* end modifed */
 struct rreq_record *rreq_record_find(struct in_addr orig_addr,
 				     u_int32_t rreq_id);
 struct blacklist *rreq_blacklist_find(struct in_addr dest_addr);

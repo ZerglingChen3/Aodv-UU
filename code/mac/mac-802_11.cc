@@ -269,6 +269,19 @@ Mac802_11::Mac802_11() :
     noisePower = 0;
     validInterval = 1;
     /* End buaa g410 */
+
+	/* Added by MSQ */
+	channelNum = 0;
+	signalNum = 0;
+    noiseNum = 0;
+    channelSignal1 = 0;
+    channelSignal2 = 0;
+    channelSignal3 = 0;
+    channelNoise1 = 0;
+    channelNoise2 = 0;
+    channelNoise3 = 0;
+	isNoise = 0;
+	/* End MSQ */
 }
 
 
@@ -1620,6 +1633,63 @@ Mac802_11::recv(Packet *p, Handler *h)
 	 *  interface.
 	 *
 	 */
+
+
+	if (isNoise == 1)
+	{
+		isNoise = 0;
+		noiseNum++;
+		/*if (noiseNum == 0)
+		{
+			noiseNum++;
+			channelNoise1 = p->txinfo_.RxPr;
+		}
+		else if (noiseNum == 1)
+		{
+			noiseNum++;
+			channelNoise2 = p->txinfo_.RxPr;
+		}
+		else if (noiseNum == 2)
+		{
+			noiseNum++;
+			channelNoise3 = p->txinfo_.RxPr;
+		}
+		else if (noiseNum >= 3)
+		{
+			noiseNum++;
+			channelNoise1 = channelNoise2;
+			channelNoise2 = channelNoise3;
+			channelNoise3 = p->txinfo_.RxPr;
+		}*/
+	}
+	else
+	{
+		signalNum++;
+		/*if (signalNum == 0)
+		{
+			signalNum++;
+			channelSignal1 = p->txinfo_.RxPr;
+		}
+		else if (signalNum == 1)
+		{
+			signalNum++;
+			channelSignal2 = p->txinfo_.RxPr;
+		}
+		else if (signalNum == 2)
+		{
+			signalNum++;
+			channelSignal3 = p->txinfo_.RxPr;
+		}
+		else if (signalNum >= 3)
+		{
+			signalNum++;
+			channelSignal1 = channelSignal2;
+			channelSignal2 = channelSignal3;
+			channelSignal3 = p->txinfo_.RxPr;
+		}*/
+	}
+	
+	
 
 	/*
 	 *  If the interface is currently in transmit mode, then
@@ -3329,6 +3399,9 @@ Mac802_11::noiseHandler()
         assert (eotPacket_ == NULL);
         eotPacket_ = p->copy();
     }
+	/* Added by MSQ */
+	isNoise = 1;
+	/* End MSQ */
 
     downtarget_->recv(p->copy(), this);
 
@@ -3372,3 +3445,64 @@ Mac802_11::getNoisePower()
 }
 
 /* End buaa g410 */
+
+/* Added by MSQ */
+int
+Mac802_11::getState()
+{
+	return tx_active_;
+}
+
+double
+Mac802_11::getSNR()
+{
+	/*double avgSignal = 0;
+	double avgNoise = 0;
+	if (signalNum == 0)
+	{
+		avgSignal = 0;
+	}
+	else if (signalNum == 1)
+	{
+		avgSignal = channelSignal1;
+	}
+	else if (signalNum == 2)
+	{
+		avgSignal = (channelSignal1 + channelSignal2) / 2;
+	}
+	else if (signalNum >= 3)
+	{
+		avgSignal = (channelSignal1 + channelSignal2 + channelSignal3) / 3;
+	}
+	
+	if (noiseNum == 0)
+	{
+		avgNoise = 0;
+	}
+	else if (noiseNum == 1)
+	{
+		avgNoise = channelNoise1;
+	}
+	else if (noiseNum == 2)
+	{
+		avgNoise = (channelNoise1 + channelNoise2) / 2;
+	}
+	else if (noiseNum >= 3)
+	{
+		avgNoise = (channelNoise1 + channelNoise2 + channelNoise3) / 3;
+	}*/
+	
+	if (noiseNum == 0)
+	{
+		//printf("SNR is %d\n", 1);
+		return 1;
+	}
+	else
+	{
+		printf("SNR is %f\n", ((double)signalNum)/(noiseNum+signalNum));
+		return ((double)signalNum)/(noiseNum+signalNum);
+	}
+}
+
+
+/* End MSQ */

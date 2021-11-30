@@ -126,7 +126,6 @@ public:
 protected:
 	void interfaceQueue(nsaddr_t next_hop, int action);
 	void sendPacket(Packet *p, struct in_addr next_hop, double delay);
-	void sendPacket_new(Packet *p, struct in_addr next_hop, double delay, int channel);
 	int startAODVUUAgent();
 	void scheduleNextEvent();
 	int gettimeofday(struct timeval *tv, struct timezone *tz);
@@ -150,6 +149,9 @@ protected:
 	Mac802_11 *maclist[MAX_IF];
 	int fixed_interface;
 	/* End buaa g410 */
+	/* Added by MSQ */
+	int channelNum;
+	/* End MSQ */
 /*
   Extract method declarations (and occasionally, variables)
   from header files
@@ -267,11 +269,5 @@ inline int NS_CLASS ifindex2devindex(unsigned int ifindex)
 
 	return -1;
 }
-
-/*@ modified by chenjiyuan:11.23*/
-inline double getCost(host_info hostInfo, struct in_addr dst, int channel) {
-    return channel;
-}
-/* end modified*/
 
 #endif /* AODV_UU_H */
