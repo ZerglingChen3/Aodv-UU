@@ -23,6 +23,9 @@
 #ifndef _AODV_UU_H
 #define _AODV_UU_H
 
+/* Number of channel */
+#define Channel_Count 3
+
 /* Constants for interface queue packet buffering/dropping */
 #define IFQ_BUFFER 0
 #define IFQ_DROP 1
@@ -269,5 +272,11 @@ inline int NS_CLASS ifindex2devindex(unsigned int ifindex)
 
 	return -1;
 }
+
+/*@ modified by chenjiyuan:11.23*/
+inline double getCost(host_info hostInfo, struct in_addr dst, int channel) {
+    return channel;
+}
+/* end modified*/
 
 #endif /* AODV_UU_H */

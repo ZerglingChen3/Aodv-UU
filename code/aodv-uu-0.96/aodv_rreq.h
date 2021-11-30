@@ -64,6 +64,7 @@ typedef struct {
 } RREQ;
 
 #define RREQ_SIZE sizeof(RREQ)
+#define RREQ_COST_SIZE RREQ_SIZE+sizeof(AODV_ext)+sizeof(double)
 
 /* A data structure to buffer information about received RREQ's */
 struct rreq_record {
@@ -83,6 +84,17 @@ struct blacklist {
 #ifndef NS_NO_DECLARATIONS
 RREQ *rreq_create(u_int8_t flags, struct in_addr dest_addr,
 		  u_int32_t dest_seqno, struct in_addr orig_addr);
+/* modifed by chenjiyuan 11.24 */
+RREQ *rreq_create_with_cost(u_int8_t flags, struct in_addr dest_addr,
+                  u_int32_t dest_seqno, struct in_addr orig_addr, double cost);
+/* end modifed at 11.24*/
+/* modifed by chenjiyuan 11.29 */
+RREQ *rreq_copy_with_cost(RREQ *package);
+void rreq_send(struct in_addr dest_addr, u_int32_t dest_seqno, int ttl,
+               u_int8_t flags, int channel);
+void rreq_forward(RREQ * rreq, int size, int ttl, int channel);
+void rreq_forward_with_cost(RREQ * rreq, int size, int ttl);
+/* end modifed at 11.29*/
 void rreq_send(struct in_addr dest_addr, u_int32_t dest_seqno, int ttl,
 	       u_int8_t flags);
 void rreq_forward(RREQ * rreq, int size, int ttl);
