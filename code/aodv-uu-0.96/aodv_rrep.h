@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors: Erik Nordström, <erik.nordstrom@it.uu.se>
+ * Authors: Erik Nordstrï¿½m, <erik.nordstrom@it.uu.se>
  *          
  *
  *****************************************************************************/
@@ -35,6 +35,7 @@
 #define RREP_REPAIR    0x2
 
 typedef struct {
+    u_int8_t channel;
     u_int8_t type;
 #if defined(__LITTLE_ENDIAN)
     u_int16_t res1:6;
@@ -62,6 +63,7 @@ typedef struct {
 #define RREP_COST_SIZE RREP_SIZE+sizeof(AODV_ext)+sizeof(double)
 
 typedef struct {
+    u_int8_t channel;
     u_int8_t type;
     u_int8_t reserved;
 } RREP_ack;
