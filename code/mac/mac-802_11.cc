@@ -335,13 +335,16 @@ Mac802_11::command(int argc, const char*const* argv)
 	}
 	/* Modified by MSQ */
     if (argc == 5) {
+		//printf("Set-workMode\n");
         if (strcmp(argv[1], "set-workMode") == 0) {
             workMode = atoi(argv[2]);
             noiseChannel = atoi(argv[3]);
 			channelNum = atoi(argv[4]);
+			//printf("workMode is %d, noiseChannel is %d\n", workMode, noiseChannel);
             noiseInterval = 0.01;
             if (workMode < 0) {
-				if (channelNum == noiseChannel || noiseChannel == -1) {
+				if (noiseChannel == channelNum || noiseChannel == -1) {
+					printf("channel %d begin to make noise\n", channelNum);
                 	mhNoise_.start(noiseInterval);
 				}
             }
@@ -510,6 +513,10 @@ Mac802_11::discard(Packet *p, const char* why)
 	}
 
 	switch(mh->dh_fc.fc_type) {
+		case MAC_Type_Reserved: {
+			Packet::free(p);
+		}
+			break;
 	case MAC_Type_Management:
 		switch(mh->dh_fc.fc_subtype) {
 		case MAC_Subtype_Auth:
@@ -1635,60 +1642,53 @@ Mac802_11::recv(Packet *p, Handler *h)
 	 */
 
 
-	if (isNoise == 1)
+	hdr_mac802_11* mh = HDR_MAC802_11(p);
+
+	if (mh->dh_fc.fc_type == MAC_Type_Reserved)
 	{
-		isNoise = 0;
 		noiseNum++;
-		/*if (noiseNum == 0)
+		//printf("channel %d recevie Noise\n", channelNum);
+		if (noiseNum == 0)
 		{
-			noiseNum++;
-			channelNoise1 = p->txinfo_.RxPr;
+			channelNoise1 = p->txinfo_.RxPr * 1000000;
 		}
 		else if (noiseNum == 1)
 		{
-			noiseNum++;
-			channelNoise2 = p->txinfo_.RxPr;
+			channelNoise2 = p->txinfo_.RxPr * 1000000;
 		}
 		else if (noiseNum == 2)
 		{
-			noiseNum++;
-			channelNoise3 = p->txinfo_.RxPr;
+			channelNoise3 = p->txinfo_.RxPr * 1000000;
 		}
 		else if (noiseNum >= 3)
 		{
-			noiseNum++;
 			channelNoise1 = channelNoise2;
 			channelNoise2 = channelNoise3;
-			channelNoise3 = p->txinfo_.RxPr;
-		}*/
+			channelNoise3 = p->txinfo_.RxPr * 1000000;
+		}
 	}
 	else
 	{
 		signalNum++;
-		/*if (signalNum == 0)
+		if (signalNum == 0)
 		{
-			signalNum++;
-			channelSignal1 = p->txinfo_.RxPr;
+			channelSignal1 = p->txinfo_.RxPr * 1000000;
 		}
 		else if (signalNum == 1)
 		{
-			signalNum++;
-			channelSignal2 = p->txinfo_.RxPr;
+			channelSignal2 = p->txinfo_.RxPr * 1000000;
 		}
 		else if (signalNum == 2)
 		{
-			signalNum++;
-			channelSignal3 = p->txinfo_.RxPr;
+			channelSignal3 = p->txinfo_.RxPr * 1000000;
 		}
 		else if (signalNum >= 3)
 		{
-			signalNum++;
 			channelSignal1 = channelSignal2;
 			channelSignal2 = channelSignal3;
-			channelSignal3 = p->txinfo_.RxPr;
-		}*/
+			channelSignal3 = p->txinfo_.RxPr * 1000000;
+		}
 	}
-	
 	
 
 	/*
@@ -1903,11 +1903,13 @@ Mac802_11::recv_timer()
         switch(subtype) {
         case MAC_Subtype_Noise:
             recvNoise(pktRx_);
+			break;
         default:
             fprintf(stderr, "recv_timer4:Invalid MAC Data Subtype %x\n",
                     subtype);
             exit(1);
         }
+		break;
 	/* End buaa g410 */
 	default:
 		fprintf(stderr, "recv_timer5:Invalid MAC Type %x\n", subtype);
@@ -3355,6 +3357,7 @@ double Mac802_11::txtime(int )
 void
 Mac802_11::noiseHandler()
 {
+	//printf("channel %d noiseHandler\n", channelNum);
     Packet *p = Packet::alloc();
     hdr_cmn* ch = HDR_CMN(p);
     struct noise_frame *nf = (struct noise_frame*)p->access(hdr_mac::offset_);
@@ -3399,9 +3402,6 @@ Mac802_11::noiseHandler()
         assert (eotPacket_ == NULL);
         eotPacket_ = p->copy();
     }
-	/* Added by MSQ */
-	isNoise = 1;
-	/* End MSQ */
 
     downtarget_->recv(p->copy(), this);
 
@@ -3456,7 +3456,7 @@ Mac802_11::getState()
 double
 Mac802_11::getSNR()
 {
-	/*double avgSignal = 0;
+	double avgSignal = 0;
 	double avgNoise = 0;
 	if (signalNum == 0)
 	{
@@ -3490,17 +3490,15 @@ Mac802_11::getSNR()
 	else if (noiseNum >= 3)
 	{
 		avgNoise = (channelNoise1 + channelNoise2 + channelNoise3) / 3;
-	}*/
+	}
 	
 	if (noiseNum == 0)
 	{
-		//printf("SNR is %d\n", 1);
-		return 1;
+		return 3;
 	}
 	else
 	{
-		printf("SNR is %f\n", ((double)signalNum)/(noiseNum+signalNum));
-		return ((double)signalNum)/(noiseNum+signalNum);
+		return avgSignal/avgNoise;
 	}
 }
 

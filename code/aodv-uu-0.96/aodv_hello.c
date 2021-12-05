@@ -382,14 +382,22 @@ void NS_CLASS update_sta_info()
 		if (maclist[i]->getState() == 0) {
 			this_host.stability.ava_channel_num++;
 		}
-		//TODO: add getSNR() == -1
 		if (maclist[i]->getSNR() > this_host.stability.best_channel_SNR) {
 			this_host.stability.best_channel_SNR = maclist[i]->getSNR();
 		}
 	}
 	//printf("%d %d %d %f\n", this_host.stability.neighbor_num, this_host.stability.neighbor_change, this_host.stability.ava_channel_num, this_host.stability.best_channel_SNR);
-	//TODO: add SVM
-	this_host.stability.isStable = 1;
+	double svmParams[5] = {0.76960165, -0.39568155, 1.98846181, 4.02854831, -13.08570038};
+	double svmResult = this_host.stability.neighbor_num * svmParams[0] + this_host.stability.neighbor_change * svmParams[1] + 
+						this_host.stability.ava_channel_num * svmParams[2] + this_host.stability.best_channel_SNR * svmParams[3] + svmParams[4];
+	if (svmResult < 0) {
+		this_host.stability.isStable = 0;
+	}
+	else {
+		this_host.stability.isStable = 1;
+	}
+	printf("%d %d %d %f %d\n", this_host.stability.neighbor_num, this_host.stability.neighbor_change, this_host.stability.ava_channel_num, this_host.stability.best_channel_SNR, this_host.stability.isStable);
+	
 }
 
 void NS_CLASS update_neighbor_info()

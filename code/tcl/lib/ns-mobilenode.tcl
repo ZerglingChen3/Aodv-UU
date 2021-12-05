@@ -555,7 +555,7 @@ Node/MobileNode instproc add-interface { channel pmodel lltype mactype qtype qle
         set noiseChannel_ [$ns get-noiseChannel]
 		# Modified by MSQ 
 		if {$workMode_ != "" && $noiseChannel_ != ""} {
-            $mac set-workMode workMode_ noiseChannel_ channelNum
+            $mac set-workMode $workMode_ $noiseChannel_ $channelNum
         }
 		# End MSQ 
     }
