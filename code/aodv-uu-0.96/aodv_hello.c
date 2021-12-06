@@ -396,7 +396,7 @@ void NS_CLASS update_sta_info()
 	else {
 		this_host.stability.isStable = 1;
 	}
-	printf("%d %d %d %f %d\n", this_host.stability.neighbor_num, this_host.stability.neighbor_change, this_host.stability.ava_channel_num, this_host.stability.best_channel_SNR, this_host.stability.isStable);
+	//printf("%d %d %d %f %d\n", this_host.stability.neighbor_num, this_host.stability.neighbor_change, this_host.stability.ava_channel_num, this_host.stability.best_channel_SNR, this_host.stability.isStable);
 	
 }
 
