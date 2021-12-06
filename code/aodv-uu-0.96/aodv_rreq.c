@@ -188,6 +188,7 @@ void NS_CLASS rreq_send_with_channel(struct in_addr dest_addr, u_int32_t dest_se
         flags |= RREQ_GRATUITOUS;
 
     //todo: set channel
+    channelNum = channel;
 
     /* Broadcast on all interfaces */
     for (i = 0; i < MAX_NR_INTERFACES; i++) {
@@ -301,6 +302,7 @@ void NS_CLASS rreq_forward_with_channel(RREQ * rreq, int size, int ttl, int chan
 				 * intermediate route */
 
     //todo: set channel
+    channelNum = channel;
 
     /* Send out on all interfaces */
     for (i = 0; i < MAX_NR_INTERFACES; i++) {
@@ -332,10 +334,8 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     rreq_orig_seqno = ntohl(rreq->orig_seqno);
     rreq_new_hcnt = rreq->hcnt + 1;
 
-    //todo: set channel
-
     /* modified by chenjiyuan 11.24 */
-    int channel; //todo: set channel
+    int channel = channelNum; //todo: set channel
     /* end modified*/
 
     /* Ignore RREQ's that originated from this node. Either we do this
@@ -381,7 +381,6 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 
     /* Determine whether there are any RREQ extensions */
     ext = (AODV_ext *) ((char *) rreq + RREQ_SIZE);
-
     while ((rreqlen - extlen) > RREQ_SIZE) {
 	switch (ext->type) {
 	
@@ -427,7 +426,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     life = PATH_DISCOVERY_TIME - 2 * rreq_new_hcnt * NODE_TRAVERSAL_TIME;
 
     if (rev_rt == NULL) {
-	DEBUG(LOG_DEBUG, 0, "Creating REVERSE route entry, RREQ orig: %s",
+        DEBUG(LOG_DEBUG, 0, "Creating REVERSE route entry, RREQ orig: %s",
 	      ip_to_str(rreq_orig));
 
     /* modified by chenjiyuan 11.26*/
@@ -530,11 +529,11 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 			   this_host.seqno, rev_rt->dest_addr,
 			   MY_ROUTE_TIMEOUT);
     */
-    rrep = rrep_create_with_cost(0, 0, 0, DEV_IFINDEX(rev_rt->ifindex).ipaddr,
+        rrep = rrep_create_with_cost(0, 0, 0, DEV_IFINDEX(rev_rt->ifindex).ipaddr,
                        this_host.seqno, rev_rt->dest_addr,
                        MY_ROUTE_TIMEOUT, 0);
 
-	//rrep_send(rrep, rev_rt, NULL, RREP_SIZE);
+        //rrep_send(rrep, rev_rt, NULL, RREP_SIZE);
     rrep_send_with_channel(rrep, rev_rt, NULL, RREP_SIZE, channel);
     /* end modified at 11.29*/
 

@@ -213,14 +213,13 @@ rt_table_t *NS_CLASS rt_table_insert_with_channel(struct in_addr dest_addr,
     list_foreach(pos, &rt_tbl.tbl[index]) {
         rt = (rt_table_t *) pos;
         if (memcmp(&rt->dest_addr, &dest_addr, sizeof(struct in_addr))
-            == 0) {
+            == 0 && rt->channel == channel) {
             DEBUG(LOG_INFO, 0, "%s already exist in routing table!",
                   ip_to_str(dest_addr));
 
             return NULL;
         }
     }
-
     if ((rt = (rt_table_t *) malloc(sizeof(rt_table_t))) == NULL) {
         fprintf(stderr, "Malloc failed!\n");
         exit(-1);

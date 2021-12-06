@@ -211,6 +211,8 @@ void NS_CLASS rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt,
           ip_to_str(dest));
 
     //todo: set channel
+    channelNum = channel;
+    printf("set channel in rrep send : %d\n", channel);
 
     aodv_socket_send((AODV_msg *) rrep, rev_rt->next_hop, size, MAXTTL,
                      &DEV_IFINDEX(rev_rt->ifindex));
@@ -350,7 +352,8 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
     int rt_flags = 0;
 
     /* modified by chenjiyuan 11.30 */
-    int channel; //todo: set channel
+    int channel = channelNum; //todo: set channel
+    printf("set channel in rrep process : %d\n", channel);
     /* end modified at 11.30 */
 
     struct in_addr rrep_dest, rrep_orig;
