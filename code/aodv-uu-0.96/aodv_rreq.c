@@ -317,6 +317,9 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 			   struct in_addr ip_dst, int ip_ttl,
 			   unsigned int ifindex)
 {
+    struct in_addr now_addr = this_host.devs[0].ipaddr;
+    printf("[%.9f RREQ]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
+            Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rreq->channel, rreq->orig_addr, rreq->dest_addr);
 
     AODV_ext *ext;
     RREP *rrep = NULL;
@@ -335,7 +338,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     rreq_new_hcnt = rreq->hcnt + 1;
 
     /* modified by chenjiyuan 11.24 */
-    int channel = channelNum; //todo: set channel
+    int channel = rreq->channel; //todo: set channel
     /* end modified*/
 
     /* Ignore RREQ's that originated from this node. Either we do this
@@ -387,8 +390,9 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	/*@ modify by chenjiyuan 12.26*/
 	case RREQ_COST_EXT:
 	    DEBUG(LOG_INFO, 0, "RREQ include EXTENSION");
-	    cost = *(double*)((char *) AODV_EXT_DATA(ext)) + getCost(this_host, rreq_dest, channel);
+	    cost = *(double*)((char *) AODV_EXT_DATA(ext)) + getCost(ip_src, now_addr, channel);
         *(double*)((char *) AODV_EXT_DATA(ext)) = cost;
+        printf("[RREQ] get cost %lf\n", cost);
 		break;
 	/*@ end modify*/
 
@@ -419,7 +423,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     /* The node always creates or updates a REVERSE ROUTE entry to the
        source of the RREQ. */
     /* modified by chenjiyuan 11.26*/
-    rev_rt = rt_table_find_with_channel(rreq_orig, channel);
+    rev_rt = rt_table_find(rreq_orig);
     /*@ end modify*/
 
     /* Calculate the extended minimal life time. */
@@ -461,6 +465,10 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
             /* end modified at 11.24 */
 
         }
+        else{
+            printf("[RREQ-ABORT]");
+            return ;
+        }
 #ifdef DISABLED
 	/* This is a out of draft modification of AODV-UU to prevent
 	   nodes from creating routing entries to themselves during
@@ -468,10 +476,10 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	   missmatch between the reverse path on the node and the one
 	   suggested by the RREQ. */
 
-	else if (rev_rt->next_hop.s_addr != ip_src.s_addr) {
-	    DEBUG(LOG_DEBUG, 0, "Dropping RREQ due to reverse route mismatch!");
-	    return;
-	}
+	// else if (rev_rt->next_hop.s_addr != ip_src.s_addr) {
+	//     DEBUG(LOG_DEBUG, 0, "Dropping RREQ due to reverse route mismatch!");
+	//     return;
+	// }
 #endif
     }
     /**** END updating/creating REVERSE route ****/
@@ -529,12 +537,13 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 			   this_host.seqno, rev_rt->dest_addr,
 			   MY_ROUTE_TIMEOUT);
     */
+    printf("[CREATE-RREP]\n");
         rrep = rrep_create_with_cost(0, 0, 0, DEV_IFINDEX(rev_rt->ifindex).ipaddr,
                        this_host.seqno, rev_rt->dest_addr,
                        MY_ROUTE_TIMEOUT, 0);
 
         //rrep_send(rrep, rev_rt, NULL, RREP_SIZE);
-    rrep_send_with_channel(rrep, rev_rt, NULL, RREP_SIZE, channel);
+    rrep_send_with_channel(rrep, rev_rt, NULL, RREP_COST_SIZE, channel);
     /* end modified at 11.29*/
 
     } else {
@@ -542,12 +551,16 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	 * route entry */
 
     /* modified by chenjiyuan 11.26*/
-    fwd_rt = rt_table_find_less_cost(rreq_dest);
+    fwd_rt = rt_table_find(rreq_dest);
     int next_channel = -1;
-    double min_cost;
+    double min_cost = MAX_NUM;
     if (fwd_rt) {
         next_channel = fwd_rt->channel;
         min_cost = fwd_rt->cost;
+        if (next_channel == -1) {
+            rt_table_delete(fwd_rt);
+            fwd_rt = NULL;
+        }
     }
     //fwd_rt = rt_table_find(rreq_dest, channel);
     /* @end modified */
@@ -604,6 +617,8 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 				   fwd_rt->dest_seqno, rev_rt->dest_addr,
 				   lifetime);
 		*/
+        printf("fuck!!! %lf\n", fwd_rt->cost);
+        printf("%d\n", next_channel);
         rrep = rrep_create_with_cost(0, 0, fwd_rt->hcnt, fwd_rt->dest_addr,
                            fwd_rt->dest_seqno, rev_rt->dest_addr,
                            lifetime, fwd_rt->cost);
@@ -611,6 +626,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
         //rrep_send(rrep, rev_rt, fwd_rt, rrep_size);
 	    rrep_send_with_channel(rrep, rev_rt, fwd_rt, RREQ_COST_SIZE, next_channel);
         /* end modified by chenjiyuan at 11.26*/
+        printf("[RREP-CREATE]\n");
         } else {
 		goto forward;
 	    }
@@ -633,7 +649,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 		      ip_to_str(rreq_dest), ip_to_str(rreq_orig));
 	    }
 	    return;
-	}
+    }
       forward:
 	if (ip_ttl > 1) {
 	    /* Update the sequence number in case the maintained one is
@@ -644,6 +660,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 
         /* modified by chenjiyuan 11.29*/
         //rreq_forward(rreq, rreqlen, --ip_ttl);
+        printf("[RREQ-FORWARD]\n");
         for (int i = 0; i < Channel_Count; ++ i)
             rreq_forward_with_channel(rreq, RREQ_COST_SIZE, ip_ttl-1, i);
         ip_ttl--;
@@ -674,7 +691,7 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 
     /* If we already have a route entry, we use information from it. */
     /* modified by chenjiyuan 11.29*/
-    rt = rt_table_find_less_cost(dest_addr);
+    rt = rt_table_find(dest_addr);
     if (rt)
         channel = rt->channel;
     /*@ end modified at 11.29*/

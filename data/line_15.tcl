@@ -91,7 +91,7 @@ set nodedist 250
 
 # @start modify by chenjiyuan
 for {set i 0} {$i < $val(nn)} {incr i} {
-    $n($i) set X_ [expr 50*$i]
+    $n($i) set X_ [expr 200*$i]
     $n($i) set Y_ 400
     $n($i) set Z_ 0
     $ns_ initial_node_pos $n($i) 25
@@ -112,17 +112,17 @@ $cbr0 set interval_ $pktrate
 $ns_ at 0.0 "$cbr0 start"
 $ns_ at 41.0 "$cbr0 stop"
 
-set udp1 [new Agent/UDP]
-$ns_ attach-agent $n(14) $udp1
-set sink1 [new Agent/Null]
-$ns_ attach-agent $n(0) $sink1
-$ns_ connect $udp1 $sink1
-set cbr1 [new Application/Traffic/CBR]
-$cbr1 attach-agent $udp1
-$cbr1 set packetSize_ $pktsize
-$cbr1 set interval_ $pktrate
-$ns_ at 0.0 "$cbr1 start"
-$ns_ at 41.0 "$cbr1 stop"
+# set udp1 [new Agent/UDP]
+# $ns_ attach-agent $n(14) $udp1
+# set sink1 [new Agent/Null]
+# $ns_ attach-agent $n(0) $sink1
+# $ns_ connect $udp1 $sink1
+# set cbr1 [new Application/Traffic/CBR]
+# $cbr1 attach-agent $udp1
+# $cbr1 set packetSize_ $pktsize
+# $cbr1 set interval_ $pktrate
+# $ns_ at 0.0 "$cbr1 start"
+# $ns_ at 41.0 "$cbr1 stop"
 # @end modify
 
 set last_node_id [expr $val(nn)-1]

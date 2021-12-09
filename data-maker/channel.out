@@ -1,0 +1,96 @@
+if (src == 0 && dst == 1 && channel == 0)
+        return 100;
+if (src == 1 && dst == 0 && channel == 0)
+        return 100;
+if (src == 0 && dst == 1 && channel == 1)
+        return 200;
+if (src == 1 && dst == 0 && channel == 1)
+        return 200;
+if (src == 0 && dst == 1 && channel == 2)
+        return 300;
+if (src == 1 && dst == 0 && channel == 2)
+        return 300;
+if (src == 1 && dst == 2 && channel == 0)
+        return 10000;
+if (src == 2 && dst == 1 && channel == 0)
+        return 10000;
+if (src == 1 && dst == 2 && channel == 1)
+        return 20000;
+if (src == 2 && dst == 1 && channel == 1)
+        return 20000;
+if (src == 1 && dst == 2 && channel == 2)
+        return 30000;
+if (src == 2 && dst == 1 && channel == 2)
+        return 30000;
+if (src == 2 && dst == 3 && channel == 0)
+        return 10000;
+if (src == 3 && dst == 2 && channel == 0)
+        return 10000;
+if (src == 2 && dst == 3 && channel == 1)
+        return 20000;
+if (src == 3 && dst == 2 && channel == 1)
+        return 20000;
+if (src == 2 && dst == 3 && channel == 2)
+        return 30000;
+if (src == 3 && dst == 2 && channel == 2)
+        return 30000;
+if (src == 3 && dst == 4 && channel == 0)
+        return 100;
+if (src == 4 && dst == 3 && channel == 0)
+        return 100;
+if (src == 3 && dst == 4 && channel == 1)
+        return 200;
+if (src == 4 && dst == 3 && channel == 1)
+        return 200;
+if (src == 3 && dst == 4 && channel == 2)
+        return 300;
+if (src == 4 && dst == 3 && channel == 2)
+        return 300;
+if (src == 1 && dst == 5 && channel == 0)
+        return 10;
+if (src == 5 && dst == 1 && channel == 0)
+        return 10;
+if (src == 1 && dst == 5 && channel == 1)
+        return 20;
+if (src == 5 && dst == 1 && channel == 1)
+        return 20;
+if (src == 1 && dst == 5 && channel == 2)
+        return 30;
+if (src == 5 && dst == 1 && channel == 2)
+        return 30;
+if (src == 5 && dst == 6 && channel == 0)
+        return 10;
+if (src == 6 && dst == 5 && channel == 0)
+        return 10;
+if (src == 5 && dst == 6 && channel == 1)
+        return 20;
+if (src == 6 && dst == 5 && channel == 1)
+        return 20;
+if (src == 5 && dst == 6 && channel == 2)
+        return 30;
+if (src == 6 && dst == 5 && channel == 2)
+        return 30;
+if (src == 6 && dst == 7 && channel == 0)
+        return 10;
+if (src == 7 && dst == 6 && channel == 0)
+        return 10;
+if (src == 6 && dst == 7 && channel == 1)
+        return 20;
+if (src == 7 && dst == 6 && channel == 1)
+        return 20;
+if (src == 6 && dst == 7 && channel == 2)
+        return 30;
+if (src == 7 && dst == 6 && channel == 2)
+        return 30;
+if (src == 7 && dst == 3 && channel == 0)
+        return 10;
+if (src == 3 && dst == 7 && channel == 0)
+        return 10;
+if (src == 7 && dst == 3 && channel == 1)
+        return 20;
+if (src == 3 && dst == 7 && channel == 1)
+        return 20;
+if (src == 7 && dst == 3 && channel == 2)
+        return 30;
+if (src == 3 && dst == 7 && channel == 2)
+        return 30;
