@@ -248,6 +248,9 @@ typedef AODV_msg hdr_aodvuu;	// Name convention for headers
 #define RREP_HELLO_NEIGHBOR_SET_EXT 3
 #define RREP_INET_DEST_EXT 4
 
+/* modified by mjw*/
+#define RREQ_UDEST_EXT 5
+
 /* An generic AODV extensions header */
 typedef struct {
     u_int8_t type;
