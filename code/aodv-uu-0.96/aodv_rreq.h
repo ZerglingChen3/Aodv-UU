@@ -69,6 +69,8 @@ typedef struct {
     u_int32_t dest_seqno;
     u_int32_t orig_addr;
     u_int32_t orig_seqno;
+    //modified by mjw
+    u_int32_t dest_count; //初始值是1，后面udest_ext数量是 dest_count-1
 } RREQ;
 
 #define RREQ_SIZE sizeof(RREQ)

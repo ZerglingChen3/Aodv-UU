@@ -201,6 +201,11 @@ static inline int name2index(char *name)
 #define AODV_RREP     2
 #define AODV_RERR     3
 #define AODV_RREP_ACK 4
+#define AODV_RREQ_LR  5
+#define AODV_RREP_LR  6
+#define AODV_RERR_LR  7
+
+#define MJW_DEBUG 919
 
 /* A generic AODV packet header struct... */
 #ifdef NS_PORT
