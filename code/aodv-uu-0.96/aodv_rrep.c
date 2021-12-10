@@ -135,7 +135,7 @@ void NS_CLASS rrep_ack_process(RREP_ack * rrep_ack, int rrep_acklen,
 			       struct in_addr ip_src, struct in_addr ip_dst)
 {
     /* modified by chenjiyuan at 11.29 */
-    rt_table_t *rt = rt_table_find_less_cost(ip_src);
+    rt_table_t *rt = rt_table_find(ip_src);
     /* end modified at 11.29 */
 
     if (rt == NULL) {
@@ -184,7 +184,7 @@ void NS_CLASS rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt,
     /* Check if we should request a RREP-ACK */
     if ((rev_rt->state == VALID && rev_rt->flags & RT_UNIDIR) ||
         (rev_rt->hcnt == 1 && unidir_hack)) {
-        rt_table_t *neighbor = rt_table_find_with_channel(rev_rt->next_hop, channel);
+        rt_table_t *neighbor = rt_table_find(rev_rt->next_hop);
 
         if (neighbor && neighbor->state == VALID && !neighbor->ack_timer.used) {
             /* If the node we received a RREQ for is a neighbor we are
@@ -212,7 +212,7 @@ void NS_CLASS rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt,
 
     //todo: set channel
     channelNum = channel;
-    printf("set channel in rrep send : %d\n", channel);
+    //printf("set channel in rrep send : %d\n", channel);
 
     aodv_socket_send((AODV_msg *) rrep, rev_rt->next_hop, size, MAXTTL,
                      &DEV_IFINDEX(rev_rt->ifindex));
@@ -344,6 +344,11 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 			   struct in_addr ip_dst, int ip_ttl,
 			   unsigned int ifindex)
 {
+    
+    struct in_addr now_addr = this_host.devs[0].ipaddr;
+    printf("[%.9f RREP]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
+            Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rrep->channel, rrep->orig_addr, rrep->dest_addr);
+
     u_int32_t rrep_lifetime, rrep_seqno, rrep_new_hcnt;
     u_int8_t pre_repair_hcnt = 0, pre_repair_flags = 0;
     rt_table_t *fwd_rt, *rev_rt;
@@ -352,8 +357,8 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
     int rt_flags = 0;
 
     /* modified by chenjiyuan 11.30 */
-    int channel = channelNum; //todo: set channel
-    printf("set channel in rrep process : %d\n", channel);
+    int channel = rrep->channel; //todo: set channel
+    //printf("set channel in rrep process : %d\n", channel);
     /* end modified at 11.30 */
 
     struct in_addr rrep_dest, rrep_orig;
@@ -378,8 +383,10 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
     }
 
     /* Ignore messages which aim to a create a route to one self */
-    if (rrep_dest.s_addr == DEV_IFINDEX(ifindex).ipaddr.s_addr)
-	return;
+    if (rrep_dest.s_addr == DEV_IFINDEX(ifindex).ipaddr.s_addr) {
+	    printf("[RREP-ABORT]\n");
+        return;
+    }
 
     DEBUG(LOG_DEBUG, 0, "from %s about %s->%s",
 	  ip_to_str(ip_src), ip_to_str(rrep_orig), ip_to_str(rrep_dest));
@@ -399,8 +406,9 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 	/*@ modify by chenjiyuan at 11.30 */
 	case RREP_COST_EXT:
 	    //DEBUG(LOG_INFO, 0, "RREP include EXTENSION");
-	    cost = *(double*)((char *) AODV_EXT_DATA(ext)) + getCost(this_host, rrep_dest, channel);
+	    cost = *(double*)((char *) AODV_EXT_DATA(ext)) + getCost(ip_src, now_addr, channel);
         *(double*)((char *) AODV_EXT_DATA(ext)) = cost;
+        printf("[RREP] get cost %lf\n", cost);
         break;
 	/*@ end modify at 11.30 */
 
@@ -432,14 +440,18 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 	extlen += AODV_EXT_SIZE(ext);
 	ext = AODV_EXT_NEXT(ext);
     }
-
+        printf("[RREP] get cost %lf\n", cost);
     /* ---------- CHECK IF WE SHOULD MAKE A FORWARD ROUTE ------------ */
 
     /*@ modify by chenjiyuan at 11.30 */
-    fwd_rt = rt_table_find_with_channel(rrep_dest, channel);
-    rev_rt = rt_table_find_less_cost(rrep_orig);
+    fwd_rt = rt_table_find(rrep_dest);
+    rev_rt = rt_table_find(rrep_orig);
     //fwd_rt = rt_table_find(rrep_dest);
     //rev_rt = rt_table_find(rrep_orig);
+    // printf("[RREP]find the fwd (%d) & rev (%d)?\n", fwd_rt, rev_rt);
+    // if (rev_rt) {
+    //     printf("[ROUNTING_TABLE] the rev (%d) of dest is %d, next hop is %d?\n", rev_rt, rev_rt -> dest_addr, rev_rt -> next_hop);
+    // }
     /* end modify at 11.30 */
 
     if (!fwd_rt) {
@@ -454,7 +466,8 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 	       (int32_t) rrep_seqno > (int32_t) fwd_rt->dest_seqno ||
 	       (rrep_seqno == fwd_rt->dest_seqno &&
 		(fwd_rt->state == INVALID || fwd_rt->flags & RT_UNIDIR ||
-		 rrep_new_hcnt < fwd_rt->hcnt))) {
+		 cost < fwd_rt->cost))) {
+            printf("only for test: dest_seqno: %d, rrep_seqno: %d, state: %d, cost: %lf\n", fwd_rt->dest_seqno, rrep_seqno, fwd_rt->state, cost);
 	pre_repair_hcnt = fwd_rt->hcnt;
 	pre_repair_flags = fwd_rt->flags;
 
@@ -541,6 +554,7 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 	if (rev_rt && rev_rt->state == VALID) {
         /*@ modify by chenjiyuan at 11.30 */
         //rrep_forward(rrep, rreplen, rev_rt, fwd_rt, --ip_ttl);
+        printf("[RREP-FORWARD]\n");
         rrep_forward(rrep, RREP_COST_SIZE, rev_rt, fwd_rt, --ip_ttl);
         /* end modified at 11.30 */
 	} else {
