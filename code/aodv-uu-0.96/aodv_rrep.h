@@ -107,6 +107,8 @@ void rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt, rt_table_t * fwd_r
 void rrep_send(RREP * rrep, rt_table_t * rev_rt, rt_table_t * fwd_rt, int size);
 void rrep_forward(RREP * rrep, int size, rt_table_t * rev_rt,
 		  rt_table_t * fwd_rt, int ttl);
+void rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
+		  struct in_addr ip_dst, int ip_ttl, unsigned int ifindex);  
 void rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 		  struct in_addr ip_dst, int ip_ttl, unsigned int ifindex);
 void rrep_ack_process(RREP_ack * rrep_ack, int rreplen, struct in_addr ip_src,

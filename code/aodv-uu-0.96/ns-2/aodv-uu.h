@@ -274,7 +274,7 @@ inline int NS_CLASS ifindex2devindex(unsigned int ifindex)
 }
 
 /*@ modified by chenjiyuan:11.23*/
-inline double getCost(host_info hostInfo, struct in_addr dst, int channel) {
+inline double getCost(struct in_addr src, struct in_addr dst, int channel) {
     return channel;
 }
 /* end modified*/
