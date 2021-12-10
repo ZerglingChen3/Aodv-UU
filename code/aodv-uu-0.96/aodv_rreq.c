@@ -108,23 +108,6 @@ RREQ *NS_CLASS rreq_create(u_int8_t flags, struct in_addr dest_addr,
     return rreq;
 }
 
-//modified by mjw
-void NS_CLASS rreq_add_udest(RREQ * rreq, struct in_addr udest,
-			     u_int32_t udest_seqno)
-{
-    RREQ_udest ud;
-
-    //ud = (RREQ_udest *) ((char *) rreq + RREQ_CALC_SIZE(rreq));
-    ud.dest_addr = udest.s_addr;
-    ud.dest_seqno = htonl(udest_seqno);
-	ud.if_valid = 1;
-	//udest_ext数量 + 1个double 的扩展头大小 + 一个double的大小 + RREQ本身大小 + udest_数量*udest_大小
-	rreq_add_ext(rreq, RREQ_UDEST_EXT, RREQ_EXT_OFFSET(rreq), RREQ_UDEST_SIZE, (char*)&ud);
-
-    rreq->dest_count++;
-}
-//end modified
-
 AODV_ext *rreq_add_ext(RREQ * rreq, int type, unsigned int offset,
 		       int len, char *data)
 {
@@ -142,6 +125,23 @@ AODV_ext *rreq_add_ext(RREQ * rreq, int type, unsigned int offset,
 
     return ext;
 }
+
+//modified by mjw
+void NS_CLASS rreq_add_udest(RREQ * rreq, struct in_addr udest,
+			     u_int32_t udest_seqno)
+{
+    RREQ_udest ud;
+
+    //ud = (RREQ_udest *) ((char *) rreq + RREQ_CALC_SIZE(rreq));
+    ud.dest_addr = udest.s_addr;
+    ud.dest_seqno = htonl(udest_seqno);
+	ud.if_valid = 1;
+	//udest_ext数量 + 1个double 的扩展头大小 + 一个double的大小 + RREQ本身大小 + udest_数量*udest_大小
+	rreq_add_ext(rreq, RREQ_UDEST_EXT, RREQ_EXT_OFFSET(rreq), RREQ_UDEST_SIZE, (char*)&ud);
+
+    rreq->dest_count++;
+}
+//end modified
 
 /* modifed by chenjiyuan 11.24 */
 RREQ *NS_CLASS rreq_create_with_cost(u_int8_t flags, struct in_addr dest_addr,
