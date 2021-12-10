@@ -150,6 +150,7 @@ tqtimer(this), ifqueue(0)
 	INIT_LIST_HEAD(&seekhead);
 	INIT_LIST_HEAD(&TQ);
 
+	local_repair = 1;
 	/* Initialize data structures */
 	worb_timer.data = NULL;
 	worb_timer.used = 0;
@@ -553,7 +554,7 @@ int NS_CLASS startAODVUUAgent()
 		/* Schedule the first HELLO */
 		//printf("llfeedback is %d, optimized_hellos is %d\n", llfeedback, optimized_hellos);
 		//if (!llfeedback && !optimized_hellos)
-			hello_start();
+			hello_start(); 
 
 		/* Initialize routing table logging */
 		if (rt_log_interval)

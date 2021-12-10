@@ -33,12 +33,17 @@
 
 #define RREP_ACK       0x1
 #define RREP_REPAIR    0x2
+//modified by mjw
+#define RREP_LOCAL_REPAIR 0x4
 
 typedef struct {
     u_int8_t channel;
     u_int8_t type;
 #if defined(__LITTLE_ENDIAN)
-    u_int16_t res1:6;
+    //modified by
+    u_int16_t res1:5;
+    u_int16_t lr:1;
+    //mjw
     u_int16_t a:1;
     u_int16_t r:1;
     u_int16_t prefix:5;
@@ -46,7 +51,10 @@ typedef struct {
 #elif defined(__BIG_ENDIAN)
     u_int16_t r:1;
     u_int16_t a:1;
-    u_int16_t res1:6;
+    //modified by
+    u_int16_t lr:1;
+    u_int16_t res1:5;
+    //mjw
     u_int16_t res2:3;
     u_int16_t prefix:5;
 #else

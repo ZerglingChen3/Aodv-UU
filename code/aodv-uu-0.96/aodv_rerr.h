@@ -31,24 +31,31 @@
 
 /* RERR Flags: */
 #define RERR_NODELETE 0x1
+//modified by mjw
+#define RERR_LOCAL_REPAIR 0x2
 
 typedef struct {
     u_int8_t channel;
     u_int8_t type;
 #if defined(__LITTLE_ENDIAN)
-    u_int8_t res1:7;
+    //modified by
+    u_int8_t res1:6;
+    u_int8_t lr:1;
+    //mjw
     u_int8_t n:1;
 #elif defined(__BIG_ENDIAN)
     u_int8_t n:1;
-    u_int8_t res1:7;
-#else
+    //modified by
+    uint8_t lr:1;
+    u_int8_t res1:6;
+    //mjw
 #error "Adjust your <bits/endian.h> defines"
 #endif
     u_int8_t res2;
     u_int8_t dest_count;
     u_int32_t dest_addr;
     u_int32_t dest_seqno;
-} RERR;
+}  RERR;
 
 #define RERR_SIZE sizeof(RERR)
 
