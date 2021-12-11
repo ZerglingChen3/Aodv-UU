@@ -978,13 +978,13 @@ void CMUTrace::format_aodvuu(Packet *p, int offset) {
 
         RREQ *aodv_rreq = (RREQ *) aodv_msg;
         RREP *aodv_rrep = (RREP *) aodv_msg;
-
         RREP_ack *aodv_rrep_ack = (RREP_ack *) aodv_msg;
         RERR *aodv_rerr = (RERR *) aodv_msg;
 
         switch (aodv_msg->type) {
 
         case AODV_RREQ:
+	case AODV_RREQ_LR:
 
                 if (pt_->tagged()) {
                         // Tagged format currently not supported
@@ -1020,6 +1020,7 @@ void CMUTrace::format_aodvuu(Packet *p, int offset) {
                 /* FALLS THROUGH (HELLO:s are sent as RREP:s) */
 
         case AODV_RREP:
+	case AODV_RREP_LR:
 
                 if (pt_->tagged()) {
                         // Tagged format currently not supported
@@ -1052,6 +1053,7 @@ void CMUTrace::format_aodvuu(Packet *p, int offset) {
                 break;
 
         case AODV_RERR:
+	case AODV_RERR_LR:
 
                 /*
                   Note 1:
