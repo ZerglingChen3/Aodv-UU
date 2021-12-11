@@ -444,7 +444,7 @@ rt_table_t *NS_CLASS rt_table_update(rt_table_t * rt, struct in_addr next,
 		neighbor_link_break(rt);
 	}
 	
-	printf("[RT UPDATE] now: %d, dest_addr : %d\n", DEV_IFINDEX(ifindex).ipaddr.s_addr, rt->dest_addr);
+	printf("[RT UPDATE] now: %d, dest_addr : %d, next: %d\n", DEV_IFINDEX(ifindex).ipaddr.s_addr, rt->dest_addr, next);
 	rt->flags = flags;
 	rt->dest_seqno = seqno;
 	rt->next_hop = next;

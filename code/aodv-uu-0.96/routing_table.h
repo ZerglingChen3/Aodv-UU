@@ -72,7 +72,7 @@ struct rt_table {
 #define RT_REPAIR        0x2
 #define RT_INV_SEQNO     0x4
 #define RT_INET_DEST     0x8	/* Mark for Internet destinations (to be relayed
-				 * through a Internet gateway. */
+/* through a Internet gateway. */
 #define RT_GATEWAY       0x10
 
 /* Route entry states */

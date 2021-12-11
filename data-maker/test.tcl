@@ -11,7 +11,7 @@ set val(rp) AODVUU ;# routing protocol
 set val(x) 700 ;# X dimension of topography
 set val(y) 700 ;# Y dimension of topography
 set val(stop) 42 ;# nam stop time
-set val(nn) 8 ;# number of mobilenodes
+set val(nn) 12 ;# number of mobilenodes
 set val(nc) 3 ;# number of channels
 set val(ni) 3 ;# number of interfaces, <= number of channels
 set pktsize 1000 ;# packet size in bytes
@@ -53,13 +53,13 @@ for {set i 0} {$i < $val(nc)} {incr i} {
   $ns_ add-channel $i $chan($i)
 }
 puts "begin to create nodes"
-for {set i 0} {$i < 8} {incr i} {
+for {set i 0} {$i < 12} {incr i} {
   set n($i) [$ns_ node]
   $god_ new_node $n($i)
 }
 $ns_ node-config -workMode -1 \
 -noiseChannel 0 
-for {set i 8} {$i < 8} {incr i} {
+for {set i 12} {$i < 12} {incr i} {
   set n($i) [$ns_ node]
   $god_ new_node $n($i)
 }
@@ -67,58 +67,79 @@ puts "created nodes"
 set nodedist 250
 
 $n(0) set X_ 100
-$n(0) set Y_ 450
+$n(0) set Y_ 100
 $n(0) set Z_ 0
 $ns_ initial_node_pos $n(0) 25
 $n(0) random-motion 0
 $n(1) set X_ 300
-$n(1) set Y_ 450
+$n(1) set Y_ 100
 $n(1) set Z_ 0
 $ns_ initial_node_pos $n(1) 25
 $n(1) random-motion 0
 $n(2) set X_ 500
-$n(2) set Y_ 450
+$n(2) set Y_ 100
 $n(2) set Z_ 0
 $ns_ initial_node_pos $n(2) 25
 $n(2) random-motion 0
 $n(3) set X_ 700
-$n(3) set Y_ 450
+$n(3) set Y_ 100
 $n(3) set Z_ 0
 $ns_ initial_node_pos $n(3) 25
 $n(3) random-motion 0
 $n(4) set X_ 900
-$n(4) set Y_ 450
+$n(4) set Y_ 100
 $n(4) set Z_ 0
 $ns_ initial_node_pos $n(4) 25
 $n(4) random-motion 0
-$n(5) set X_ 300
-$n(5) set Y_ 200
+$n(5) set X_ 1100
+$n(5) set Y_ 100
 $n(5) set Z_ 0
 $ns_ initial_node_pos $n(5) 25
 $n(5) random-motion 0
-$n(6) set X_ 500
-$n(6) set Y_ 150
+$n(6) set X_ 1300
+$n(6) set Y_ 100
 $n(6) set Z_ 0
 $ns_ initial_node_pos $n(6) 25
 $n(6) random-motion 0
-$n(7) set X_ 700
-$n(7) set Y_ 200
+$n(7) set X_ 1500
+$n(7) set Y_ 100
 $n(7) set Z_ 0
 $ns_ initial_node_pos $n(7) 25
 $n(7) random-motion 0
+$n(8) set X_ 1700
+$n(8) set Y_ 100
+$n(8) set Z_ 0
+$ns_ initial_node_pos $n(8) 25
+$n(8) random-motion 0
+$n(9) set X_ 1900
+$n(9) set Y_ 100
+$n(9) set Z_ 0
+$ns_ initial_node_pos $n(9) 25
+$n(9) random-motion 0
+$n(10) set X_ 2100
+$n(10) set Y_ 100
+$n(10) set Z_ 0
+$ns_ initial_node_pos $n(10) 25
+$n(10) random-motion 0
+$n(11) set X_ 1800
+$n(11) set Y_ 200
+$n(11) set Z_ 0
+$ns_ initial_node_pos $n(11) 25
+$n(11) random-motion 0
 
 set udp0 [new Agent/UDP]
 $ns_ attach-agent $n(0) $udp0
 set sink0 [new Agent/Null]
-$ns_ attach-agent $n(4) $sink0
+$ns_ attach-agent $n(10) $sink0
 $ns_ connect $udp0 $sink0
 set cbr0 [new Application/Traffic/CBR]
 $cbr0 attach-agent $udp0
 $cbr0 set packetSize_ $pktsize
 $cbr0 set interval_ $pktrate
 $ns_ at 0.000000 "$cbr0 start"
-$ns_ at 41.000000 "$cbr0 stop"
+$ns_ at 16.000000 "$cbr0 stop"
 
+$ns_ at 4.000000 "$n(9) setdest 2000 100 100"
 
 set last_node_id [expr $val(nn)-1]
 proc finish {} {

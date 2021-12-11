@@ -33,12 +33,17 @@
 
 #define RREP_ACK       0x1
 #define RREP_REPAIR    0x2
+//modified by mjw
+#define RREP_LOCAL_REPAIR 0x4
 
 typedef struct {
     u_int8_t channel;
     u_int8_t type;
 #if defined(__LITTLE_ENDIAN)
-    u_int16_t res1:6;
+    //modified by
+    u_int16_t res1:5;
+    u_int16_t lr:1;
+    //mjw
     u_int16_t a:1;
     u_int16_t r:1;
     u_int16_t prefix:5;
@@ -46,7 +51,10 @@ typedef struct {
 #elif defined(__BIG_ENDIAN)
     u_int16_t r:1;
     u_int16_t a:1;
-    u_int16_t res1:6;
+    //modified by
+    u_int16_t lr:1;
+    u_int16_t res1:5;
+    //mjw
     u_int16_t res2:3;
     u_int16_t prefix:5;
 #else
@@ -57,10 +65,26 @@ typedef struct {
     u_int32_t dest_seqno;
     u_int32_t orig_addr;
     u_int32_t lifetime;
+    //modified by mjw
+    u_int32_t dest_count;
 } RREP;
 
 #define RREP_SIZE sizeof(RREP)
 #define RREP_COST_SIZE RREP_SIZE+sizeof(AODV_ext)+sizeof(double)
+
+typedef struct {
+    u_int32_t dest_addr;
+    u_int32_t dest_seqno;
+} RREP_udest;
+
+#define RREP_UDEST_SIZE sizeof(RREP_udest)
+
+#define RREP_CALC_SIZE(rrep) (RREP_SIZE + (rrep->dest_count-1)*RREP_UDEST_SIZE)
+#define RREP_UDEST_FIRST(rrep) ((RREP_udest *)&rrep->dest_addr)
+#define RREP_UDEST_NEXT(udest) ((RREP_udest *)((char *)udest + RREP_UDEST_SIZE))
+
+#define RREP_EXT_OFFSET(rrep) (AODV_EXT_HDR_SIZE*(rrep->dest_count-1) \
+	+ RREP_CALC_SIZE(rrep))
 
 typedef struct {
     u_int8_t channel;
@@ -97,8 +121,12 @@ AODV_ext *rrep_add_ext(RREP * rrep, int type, unsigned int offset,
 void rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt, rt_table_t * fwd_rt, int size, int channel);
 /*@ end modified*/
 void rrep_send(RREP * rrep, rt_table_t * rev_rt, rt_table_t * fwd_rt, int size);
+void rrep_add_udest(RREP * rrep, struct in_addr udest,
+			     u_int32_t udest_seqno);
 void rrep_forward(RREP * rrep, int size, rt_table_t * rev_rt,
 		  rt_table_t * fwd_rt, int ttl);
+void rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
+		  struct in_addr ip_dst, int ip_ttl, unsigned int ifindex);  
 void rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 		  struct in_addr ip_dst, int ip_ttl, unsigned int ifindex);
 void rrep_ack_process(RREP_ack * rrep_ack, int rreplen, struct in_addr ip_src,

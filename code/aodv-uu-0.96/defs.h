@@ -121,6 +121,7 @@ struct host_info {
     struct timeval bcast_time;	/* The time of the last broadcast msg sent */
     struct timeval fwd_time;	/* The time a data packet was last forwarded */
     u_int32_t rreq_id;		/* RREQ id */
+    u_int32_t rerr_id;
     int nif;			/* Number of interfaces to broadcast on */
         struct dev_info devs[MAX_NR_INTERFACES+1]; /* Add +1 for returning as "error" in ifindex2devindex. */
     /* Added by MSQ */
@@ -201,6 +202,11 @@ static inline int name2index(char *name)
 #define AODV_RREP     2
 #define AODV_RERR     3
 #define AODV_RREP_ACK 4
+#define AODV_RREQ_LR  5
+#define AODV_RREP_LR  6
+#define AODV_RERR_LR  7
+
+#define MJW_DEBUG 919
 
 /* A generic AODV packet header struct... */
 #ifdef NS_PORT
@@ -242,6 +248,10 @@ typedef AODV_msg hdr_aodvuu;	// Name convention for headers
 #define RREP_HELLO_INTERVAL_EXT 2
 #define RREP_HELLO_NEIGHBOR_SET_EXT 3
 #define RREP_INET_DEST_EXT 4
+
+/* modified by mjw*/
+#define RREQ_UDEST_EXT 5
+#define RREP_UDEST_EXT 6
 
 /* An generic AODV extensions header */
 typedef struct {
