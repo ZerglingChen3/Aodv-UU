@@ -77,7 +77,7 @@ RREQ *NS_CLASS rreq_create(u_int8_t flags, struct in_addr dest_addr,
     rreq->dest_addr = dest_addr.s_addr;
     rreq->dest_seqno = htonl(dest_seqno);
     rreq->orig_addr = orig_addr.s_addr;
-
+	rreq->dest_count = 1;
     /* Immediately before a node originates a RREQ flood it must
        increment its sequence number... */
     seqno_incr(this_host.seqno);
@@ -95,9 +95,9 @@ RREQ *NS_CLASS rreq_create(u_int8_t flags, struct in_addr dest_addr,
 	if (flags & RREQ_LOCAL_REPAIR){
 		rreq->type = AODV_RREQ_LR;
 		rreq->lr = 1;
-		/*#ifdef MJW_DEBUG
+		#ifdef MJW_DEBUG
 		printf("rreq消息是快速修复消息\n");
-		#endif*/
+		#endif
 	}
 
     DEBUG(LOG_DEBUG, 0, "Assembled RREQ %s", ip_to_str(dest_addr));
@@ -288,9 +288,9 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 			   struct in_addr ip_dst, int ip_ttl,
 			   unsigned int ifindex)
 {
-	/*#ifdef MJW_DEBUG
-	printf("开始处理修复请求消息 来自：%d, dst:%d ttl:%d\n", ip_src.s_addr, rreq->dest_addr,ip_ttl);
-	#endif*/
+	#ifdef MJW_DEBUG
+	printf("开始处理修复请求消息 来自：%d, dst:%d ttl:%d rreqlen:%d\n", ip_src.s_addr, rreq->dest_addr,ip_ttl,rreqlen);
+	#endif
 	AODV_ext *ext;
     RREP *rrep = NULL;
     int rrep_size = RREP_SIZE;
@@ -311,6 +311,7 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     /* Ignore RREQ's that originated from this node. Either we do this
        or we buffer our own sent RREQ's as we do with others we
        receive. */
+	
     if (rreq_orig.s_addr == DEV_IFINDEX(ifindex).ipaddr.s_addr)
 	return;
 
@@ -335,7 +336,7 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     /* Ignore already processed RREQs. */
     if (rreq_record_find(rreq_orig, rreq_id))
 	return;
-
+	
     /* Now buffer this RREQ so that we don't process a similar RREQ we
        get within PATH_DISCOVERY_TIME. */
     rreq_record_insert(rreq_orig, rreq_id);
@@ -352,14 +353,15 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     if (rev_rt == NULL) {
 	DEBUG(LOG_DEBUG, 0, "Creating REVERSE route entry, RREQ orig: %s",
 	      ip_to_str(rreq_orig));
-
 	rev_rt = rt_table_insert(rreq_orig, ip_src, rreq_new_hcnt,
 				 rreq_orig_seqno, life, VALID, 0, ifindex);
+	//printf("111111111111here!!!!!!!!!!!!!!\n");
     } else {
 	if (rev_rt->dest_seqno == 0 ||
 	    (int32_t) rreq_orig_seqno > (int32_t) rev_rt->dest_seqno ||
 	    (rreq_orig_seqno == rev_rt->dest_seqno &&
 	     (rev_rt->state == INVALID || rreq_new_hcnt < rev_rt->hcnt))) {
+		//printf("2222222222222222here!!!!!!!!!!!!!!\n");
 	    rev_rt = rt_table_update(rev_rt, ip_src, rreq_new_hcnt,
 				     rreq_orig_seqno, life, VALID,
 				     rev_rt->flags);
@@ -372,6 +374,7 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	   suggested by the RREQ. */
 
 	else if (rev_rt->next_hop.s_addr != ip_src.s_addr) {
+		//printf("333333333333333333333333333here!!!!!!!!!!!!!!\n");
 	    DEBUG(LOG_DEBUG, 0, "Dropping RREQ due to reverse route mismatch!");
 	    return;
 	}
@@ -416,7 +419,7 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	//modified by mjw 放到这里
 	/* Determine whether there are any RREQ extensions */
     ext = (AODV_ext *) ((char *) rreq + RREQ_SIZE);
-
+	printf("here!!!!!!!!!!!!!!\n");
 	/*#ifdef MJW_DEBUG
 		printf("rreqlen:%d RREQ_SIZE:%d\n",rreqlen, RREQ_SIZE);
 	#endif*/
@@ -430,14 +433,14 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	    break;
 	//moidfied by mjw
 	case RREQ_UDEST_EXT:
-		/*#ifdef MJW_DEBUG
-		printf("处理不可达ext dest:%d 当前地址：%d\n",ud->dest_addr,DEV_IFINDEX(ifindex).ipaddr.s_addr);
-		#endif*/
+		#ifdef MJW_DEBUG
+		printf("处理不可达ext dest:%d 当前地址：%d valid:%d\n",ud->dest_addr,DEV_IFINDEX(ifindex).ipaddr.s_addr,ud->if_valid);
+		#endif
 		if (ud->if_valid && ud->dest_addr == 
 			DEV_IFINDEX(ifindex).ipaddr.s_addr) {
-			/*_DEBUG
+			#ifdef MJW_DEBUG
 			printf("是不可达的终点 dest:%d\n",ud->dest_addr);
-			#endif*/
+			#endif
 			ud->if_valid = 0;
 			if (ud->dest_seqno != 0) {
 				if ((int32_t) this_host.seqno < (int32_t) (ud->dest_seqno))
@@ -448,9 +451,11 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 			rrep = rrep_create(RREP_LOCAL_REPAIR, 0, 0, DEV_IFINDEX(rev_rt->ifindex).ipaddr,
 					this_host.seqno, rev_rt->dest_addr,
 					MY_ROUTE_TIMEOUT);
-
-			rrep_send(rrep, rev_rt, NULL, RREP_SIZE);
-
+			struct in_addr temp;
+			temp.s_addr = ud->dest_addr;
+			rrep_add_udest(rrep, temp, this_host.seqno);
+			rrep_send(rrep, rev_rt, NULL, RREP_EXT_OFFSET(rrep));
+			printf("send rrep_lr to %d\n",rev_rt->next_hop.s_addr);
 		}
 		break;
 	//end modified
@@ -480,11 +485,36 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 		seqno_incr(this_host.seqno);
 	}
 	//modified by mjw 因为已经确定是 lr 类型了 
+	
+	printf("[RREP-CREATE]\n");
 	rrep = rrep_create(RREP_LOCAL_REPAIR, 0, 0, DEV_IFINDEX(rev_rt->ifindex).ipaddr,
 			   this_host.seqno, rev_rt->dest_addr,
 			   MY_ROUTE_TIMEOUT);
 
-	rrep_send(rrep, rev_rt, NULL, RREP_SIZE);
+
+	//***************************************************mjw**********************************************************
+	ext = (AODV_ext *) ((char *) rreq + RREQ_SIZE);
+	extlen = 0;
+    while ((rreqlen - extlen) > RREQ_SIZE) {
+	printf("here!!!!!!!!!!!!!!!!!!!!\n");
+	RREQ_udest *ud = (RREQ_udest*) (((char*)ext) + AODV_EXT_HDR_SIZE);
+	switch (ext->type) {
+	//moidfied by mjw
+	case RREQ_UDEST_EXT:
+		struct in_addr temp;
+		temp.s_addr = ud->dest_addr;
+		rrep_add_udest(rrep, temp, ud->dest_seqno);
+		break;
+	default:
+	    alog(LOG_WARNING, 0, __FUNCTION__, "Unknown extension type %d",
+		 ext->type);
+	    break;
+	}
+	extlen += AODV_EXT_SIZE(ext);
+	ext = AODV_EXT_NEXT(ext);
+    }
+	//***************************************************mjw**********************************************************
+	rrep_send(rrep, rev_rt, NULL, RREP_EXT_OFFSET(rrep));
 
     } else {
 	/* We are an INTERMEDIATE node. - check if we have an active
@@ -536,6 +566,7 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 #endif				/* CONFIG_GATEWAY_DISABLED */
 
 	    /* Respond only if the sequence number is fresh enough... */
+		printf("seqno : %d %d\n", fwd_rt->dest_seqno, rreq_dest_seqno);
 	    if (fwd_rt->dest_seqno != 0 &&
 		(int32_t) fwd_rt->dest_seqno >= (int32_t) rreq_dest_seqno) {
 		lifetime = timeval_diff(&fwd_rt->rt_timer.timeout, &now);
@@ -543,6 +574,9 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 				   fwd_rt->dest_seqno, rev_rt->dest_addr,
 				   lifetime);
 		rrep_send(rrep, rev_rt, fwd_rt, rrep_size);
+		#ifdef MJW_DEBUG
+			printf("send rrep_lr origin_addr:%d \n",rev_rt->dest_addr.s_addr);
+		#endif
 	    } else {
 		goto forward;
 	    }
@@ -567,9 +601,10 @@ void NS_CLASS rreq_process_lr(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 	    if (fwd_rt && !(fwd_rt->flags & RT_INET_DEST) &&
 		(int32_t) fwd_rt->dest_seqno > (int32_t) rreq_dest_seqno)
 		rreq->dest_seqno = htonl(fwd_rt->dest_seqno);
-
-	    rreq_forward(rreq, rreqlen, --ip_ttl);
-
+		int next_ttl = ip_ttl - 1;
+		for (int i = 0; i < Channel_Count; ++ i)
+	    	rreq_forward_with_channel(rreq, rreqlen, next_ttl, i);
+		ip_ttl --;
 	} else {
 	    DEBUG(LOG_DEBUG, 0, "RREQ not forwarded - ttl=0");
 	}
@@ -599,7 +634,7 @@ void NS_CLASS rreq_forward_with_cost(RREQ * rreq, int size, int ttl)
     for (i = 0; i < MAX_NR_INTERFACES; i++) {
         if (!DEV_NR(i).enabled)
             continue;
-        aodv_socket_send((AODV_msg *) rreq, dest, RREQ_COST_SIZE, ttl, &DEV_NR(i));
+        aodv_socket_send((AODV_msg *) rreq, dest, size, ttl, &DEV_NR(i));
     }
 }
 /* end modified at 11.30 */
@@ -626,11 +661,12 @@ void NS_CLASS rreq_forward_with_channel(RREQ * rreq, int size, int ttl, int chan
     //todo: set channel
     channelNum = channel;
 
+	printf("[TTL]: %d\n", ttl);
     /* Send out on all interfaces */
     for (i = 0; i < MAX_NR_INTERFACES; i++) {
         if (!DEV_NR(i).enabled)
             continue;
-        aodv_socket_send((AODV_msg *) rreq, dest, RREQ_COST_SIZE, ttl, &DEV_NR(i));
+        aodv_socket_send((AODV_msg *) rreq, dest, size, ttl, &DEV_NR(i));
     }
 }
 /* end modifed at 11.29*/
@@ -639,14 +675,16 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 			   struct in_addr ip_dst, int ip_ttl,
 			   unsigned int ifindex)
 {
+	struct in_addr now_addr = this_host.devs[0].ipaddr;
     //modified by mjw
 	if(rreq->type == AODV_RREQ_LR) {
+		printf("[%.9f RREQ_LOCAL]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
+            Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rreq->channel, rreq->orig_addr, rreq->dest_addr);
 		rreq_process_lr(rreq,rreqlen,ip_src,ip_dst,ip_ttl,ifindex);
 		return;
 	}
 	// end modified
 	
-    struct in_addr now_addr = this_host.devs[0].ipaddr;
     printf("[%.9f RREQ]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
             Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rreq->channel, rreq->orig_addr, rreq->dest_addr);
 
@@ -798,7 +836,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 
         }
         else{
-            printf("[RREQ-ABORT]");
+            printf("[RREQ-ABORT]\n");
             return ;
         }
 #ifdef DISABLED
@@ -1008,12 +1046,15 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 				   struct ip_data *ipd)
 {
+	struct in_addr now_addr = this_host.devs[0].ipaddr;
+
+	printf("[RREQ_ROUTE_DISCOVERY] now_addr: %d, dest_addr: %d, flags: %d\n", now_addr, dest_addr, flags);
 	/*#ifdef MJW_DEBUG
 	printf("开启route_discovery\n");
 	#endif*/
     struct timeval now;
     rt_table_t *rt = NULL;
-    int channel = -1;
+    int channel = 0;
     seek_list_t *seek_entry;
     u_int32_t dest_seqno;
     int ttl;
@@ -1021,8 +1062,8 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 
     gettimeofday(&now, NULL);
 
-    if (seek_list_find(dest_addr))
-	return;
+    // if (seek_list_find(dest_addr))
+	// return;
 
     /* If we already have a route entry, we use information from it. */
     /* modified by chenjiyuan 11.29*/
@@ -1046,6 +1087,7 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 	    ttl = rt->hcnt + TTL_INCREMENT;
 	}
 
+	ttl = 16;
 /* 	if (rt->flags & RT_INET_DEST) */
 /* 	    flags |= RREQ_DEST_ONLY; */
 
@@ -1079,10 +1121,11 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 void NS_CLASS rreq_local_repair(rt_table_t * rt, struct in_addr src_addr,
 				struct ip_data *ipd)
 {
-	/*#ifdef MJW_DEBUG
+	#ifdef MJW_DEBUG
 	printf("开启local_repair, 源头addr:%d, 不可达下一跳:%d, 不可达dest:%d\n",
 			src_addr.s_addr, rt->next_hop.s_addr, rt->dest_addr.s_addr);
-	#endif*/
+			printf("AAAAAAAAAAAA!!!\n");
+	#endif
     struct timeval now;
     seek_list_t *seek_entry;
     rt_table_t *src_entry;
@@ -1094,11 +1137,13 @@ void NS_CLASS rreq_local_repair(rt_table_t * rt, struct in_addr src_addr,
 	return;
 
 	//modified by mjw
-    if (seek_list_find(rt->next_hop))
-	return;
+    // if (seek_list_find(rt->next_hop))
+	// return;
+	printf("AAAAAAAAAAAA!!!\n");
 
     if (!(rt->flags & RT_REPAIR))
 	return;
+	printf("BBBBBBBBBBBBBBBBBBB!!!\n");
 
     gettimeofday(&now, NULL);
 
@@ -1120,10 +1165,10 @@ void NS_CLASS rreq_local_repair(rt_table_t * rt, struct in_addr src_addr,
 	else break;
 	}
 	RREQ* rreq_to_find = rreq_create(flags,rt->next_hop,0,DEV_NR(tosend_i).ipaddr);
-	/*#ifdef MJW_DEBUG
+	#ifdef MJW_DEBUG
 	printf("产生了新的快速修复消息 自己的ip:%d, 要找的ip:%d\n", DEV_NR(tosend_i).ipaddr.s_addr,
 		rt->next_hop.s_addr);
-	#endif*/
+	#endif
 	if(rt->next_hop.s_addr != rt->dest_addr.s_addr) {
 		rreq_add_udest(rreq_to_find, rt->dest_addr, rt->dest_seqno);
 		/*#ifdef MJW_DEBUG
@@ -1170,10 +1215,10 @@ void NS_CLASS rreq_local_repair(rt_table_t * rt, struct in_addr src_addr,
 	struct in_addr send_dest;
 	send_dest.s_addr = AODV_BROADCAST;
 	aodv_socket_send((AODV_msg *) rreq_to_find, send_dest
-	, RREQ_EXT_OFFSET(rreq_to_find), max_ttl+LOCAL_ADD_TTL, &DEV_NR(tosend_i));
-	/*#ifdef MJW_DEBUG
-		printf("广播rreq的大小：%d\n",RREQ_EXT_OFFSET(rreq_to_find));
-	#endif*/
+	, RREQ_EXT_OFFSET(rreq_to_find), max_ttl/*+LOCAL_ADD_TTL*/, &DEV_NR(tosend_i));
+	#ifdef MJW_DEBUG
+		printf("%d, udest_count:%d 广播rreq的大小：%d\n",RREQ_SIZE ,rreq_to_find->dest_count ,RREQ_EXT_OFFSET(rreq_to_find));
+	#endif
     /*if (src_entry)
 	ttl = (int) (Max(rt->hcnt, 0.5 * src_entry->hcnt) + LOCAL_ADD_TTL);
     else

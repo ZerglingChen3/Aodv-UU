@@ -34,6 +34,60 @@
 #include "params.h"
 
 #endif
+//modified by mjw
+static LIST(rerr_records);
+
+static struct rerr_record *rerr_record_insert(struct in_addr orig_addr,
+					      u_int32_t rerr_id, u_int32_t last_addr);
+static struct rerr_record *rerr_record_find(struct in_addr orig_addr,
+					    u_int32_t rerr_id, u_int32_t last_addr);
+
+NS_STATIC struct rerr_record *NS_CLASS rerr_record_insert(struct in_addr
+							  orig_addr,
+							  u_int32_t rerr_id, u_int32_t last_addr)
+{
+    struct rerr_record *rec;
+
+    rec = rerr_record_find(orig_addr, rerr_id, last_addr);
+
+    /* If already buffered, should we update the timer???  */
+    if (rec)
+	return rec;
+
+    if ((rec =
+	 (struct rerr_record *) malloc(sizeof(struct rerr_record))) == NULL) {
+	fprintf(stderr, "Malloc failed!!!\n");
+	exit(-1);
+    }
+    rec->orig_addr = orig_addr;
+    rec->rerr_id = rerr_id;
+	rec->last_addr = last_addr;
+
+    //timer_init(&rec->rec_timer, &NS_CLASS rreq_record_timeout, rec);
+
+    list_add(&rerr_records, &rec->l);
+
+    //DEBUG(LOG_INFO, 0, "Buffering RREQ %s rreq_id=%lu time=%u",
+	//  ip_to_str(orig_addr), rerr_id, PATH_DISCOVERY_TIME);
+
+    //timer_set_timeout(&rec->rec_timer, PATH_DISCOVERY_TIME);
+    return rec;
+}
+
+NS_STATIC struct rerr_record *NS_CLASS rerr_record_find(struct in_addr
+							orig_addr,
+							u_int32_t rerr_id, u_int32_t last_addr)
+{
+    list_t *pos;
+
+    list_foreach(pos, &rerr_records) {
+	struct rerr_record *rec = (struct rerr_record *) pos;
+	if (rec->orig_addr.s_addr == orig_addr.s_addr &&
+	    (rec->rerr_id == rerr_id) && (rec->last_addr == last_addr))
+	    return rec;
+    }
+    return NULL;
+}
 
 RERR *NS_CLASS rerr_create(u_int8_t flags, struct in_addr dest_addr,
 			   u_int32_t dest_seqno)
@@ -57,6 +111,7 @@ RERR *NS_CLASS rerr_create(u_int8_t flags, struct in_addr dest_addr,
 		#endif*/
 	}
 	
+	//rrer->rrer_id = htonl(this_host.rerr_id++);
     rerr->res1 = 0;
     rerr->res2 = 0;
     rerr->dest_addr = dest_addr.s_addr;
@@ -81,12 +136,28 @@ void NS_CLASS rerr_add_udest(RERR * rerr, struct in_addr udest,
 void NS_CLASS rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 			   struct in_addr ip_dst)
 {
+	struct in_addr now_addr = this_host.devs[0].ipaddr;
+	// end modified
+    printf("[%.9f RRER]now the address is: %d, source is : %d , target is: %d, channelNum : %d, dest: %d, flag: %d\n", 
+            Scheduler::instance().clock(), now_addr, ip_src, ip_dst, rerr->channel, rerr->dest_addr, rerr->lr);
+
     RERR *new_rerr = NULL;
     RERR_udest *udest;
     rt_table_t *rt;
     u_int32_t rerr_dest_seqno;
     struct in_addr udest_addr, rerr_unicast_dest;
     int i;
+	struct in_addr origin_addr;
+	origin_addr.s_addr = rerr->rerr_origin_addr;
+
+	printf("Dealing WIHT THE ERROR origin:%d, rerr_id:%d last_addr:%d\n",origin_addr.s_addr, rerr->rerr_id, ip_src.s_addr);
+	//rerr mjw
+	if (rerr_record_find(origin_addr, rerr->rerr_id,ip_src.s_addr)){
+		printf("HAVE DEALED WIHT THE ERROR origin:%d, rerr_id:%d \n",origin_addr.s_addr, rerr->rerr_id);
+		return;
+	}
+
+    rerr_record_insert(origin_addr, rerr->rerr_id, ip_src.s_addr);
 
     rerr_unicast_dest.s_addr = 0;
 
@@ -117,6 +188,7 @@ void NS_CLASS rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 
 	if (rt && rt->state == VALID && rt->next_hop.s_addr == ip_src.s_addr) {
 
+		printf("[RRER-PROCESS] %d %d %d\n", rt->next_hop.s_addr, ip_src.s_addr, udest_addr.s_addr);
 	    /* Checking sequence numbers here is an out of draft
 	     * addition to AODV-UU. It is here because it makes a lot
 	     * of sense... */
@@ -142,6 +214,7 @@ void NS_CLASS rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 			/*#ifdef MJW_DEBUG
 			printf("修复rerr消息引起路由重发现 dest:%d\n",rt->dest_addr);
 			#endif*/
+			printf("I want this\n");
 			rreq_route_discovery(rt->dest_addr,0,NULL);
 		}
 
@@ -165,6 +238,9 @@ void NS_CLASS rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 
 		    new_rerr = rerr_create(flags, rt->dest_addr,
 					   rt->dest_seqno);
+			//rerr mjw
+			new_rerr->rerr_id = rerr->rerr_id;
+			new_rerr->rerr_origin_addr = rerr->rerr_origin_addr;
 		    DEBUG(LOG_DEBUG, 0, "Added %s as unreachable, seqno=%lu",
 			  ip_to_str(rt->dest_addr), rt->dest_seqno);
 
@@ -207,15 +283,15 @@ void NS_CLASS rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 
     /* If a RERR was created, then send it now... */
     if (new_rerr) {
-
 	rt = rt_table_find(rerr_unicast_dest);
 
-	if (rt && new_rerr->dest_count == 1 && rerr_unicast_dest.s_addr)
+	if (rt && new_rerr->dest_count == 1 && rerr_unicast_dest.s_addr) {
 	    aodv_socket_send((AODV_msg *) new_rerr,
 			     rerr_unicast_dest,
 			     RERR_CALC_SIZE(new_rerr), 1,
 			     &DEV_IFINDEX(rt->ifindex));
-
+				 	printf("[RERR-SEND] unicast_dest:%d dest_count:%d\n",rerr_unicast_dest.s_addr,new_rerr->dest_count);
+	}
 	else if (new_rerr->dest_count > 0) {
 	    /* FIXME: Should only transmit RERR on those interfaces
 	     * which have precursor nodes for the broken route */
@@ -227,6 +303,7 @@ void NS_CLASS rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 		dest.s_addr = AODV_BROADCAST;
 		aodv_socket_send((AODV_msg *) new_rerr, dest,
 				 RERR_CALC_SIZE(new_rerr), 1, &DEV_NR(i));
+		printf("[RERR-SEND] unicast_dest:%d dest_count:%d\n",rerr_unicast_dest.s_addr,new_rerr->dest_count);
 	    }
 	}
     }

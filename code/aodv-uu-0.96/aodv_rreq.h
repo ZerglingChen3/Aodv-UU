@@ -81,7 +81,7 @@ typedef struct {
 typedef struct {
     u_int32_t dest_addr;
     u_int32_t dest_seqno;
-    u_int8_t if_valid;
+    u_int32_t if_valid;
 } RREQ_udest;
 
 #define RREQ_UDEST_SIZE sizeof(RREQ_udest)
@@ -90,8 +90,10 @@ typedef struct {
 #define RREQ_UDEST_FIRST(rreq) ((RREQ_udest *)&rreq->dest_addr)
 #define RREQ_UDEST_NEXT(udest) ((RREQ_udest *)((char *)udest + RREQ_UDEST_SIZE))
 
-#define RREQ_EXT_OFFSET(rreq) (AODV_EXT_HDR_SIZE*(rreq->dest_count-1+1) \
+//#define RREQ_EXT_OFFSET(rreq) (AODV_EXT_HDR_SIZE*(rreq->dest_count-1+1) \
 	+ sizeof(double) + RREQ_CALC_SIZE(rreq))
+#define RREQ_EXT_OFFSET(rreq) (AODV_EXT_HDR_SIZE*(rreq->dest_count-1) \
+	+ RREQ_CALC_SIZE(rreq))
 //end modified
 
 /* A data structure to buffer information about received RREQ's */

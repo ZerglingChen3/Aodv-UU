@@ -227,15 +227,17 @@ void NS_CLASS aodv_socket_process_packet(AODV_msg * aodv_msg, int len,
     /* Check what type of msg we received and call the corresponding
        function to handle the msg... */
     switch (aodv_msg->type) {
-
+	case AODV_RREQ_LR:
     case AODV_RREQ:
 	rreq_process((RREQ *) aodv_msg, len, src, dst, ttl, ifindex);
 	break;
     case AODV_RREP:
+	case AODV_RREP_LR:
 	DEBUG(LOG_DEBUG, 0, "Received RREP");
 	rrep_process((RREP *) aodv_msg, len, src, dst, ttl, ifindex);
 	break;
     case AODV_RERR:
+	case AODV_RERR_LR:
 	DEBUG(LOG_DEBUG, 0, "Received RERR");
 	rerr_process((RERR *) aodv_msg, len, src, dst);
 	break;

@@ -60,6 +60,7 @@ RREP *NS_CLASS rrep_create(u_int8_t flags,
     rrep->dest_seqno = htonl(dest_seqno);
     rrep->orig_addr = orig_addr.s_addr;
     rrep->lifetime = htonl(life);
+	rrep->dest_count = 1;
 
     if (flags & RREP_REPAIR)
 	rrep->r = 1;
@@ -174,6 +175,25 @@ AODV_ext *NS_CLASS rrep_add_ext(RREP * rrep, int type, unsigned int offset,
 
     return ext;
 }
+
+//modified by mjw
+void NS_CLASS rrep_add_udest(RREP * rrep, struct in_addr udest,
+			     u_int32_t udest_seqno)
+{
+    RREP_udest ud;
+
+    ud.dest_addr = udest.s_addr;
+    ud.dest_seqno = htonl(udest_seqno);
+
+	#ifdef MJW_DEBUG
+		printf("rrep_add_udest: rrep_origin:%d, udest:%d\n",rrep->orig_addr, udest.s_addr);
+	#endif
+	rrep_add_ext(rrep, RREP_UDEST_EXT, RREP_EXT_OFFSET(rrep), RREP_UDEST_SIZE, (char*)&ud);
+
+    rrep->dest_count++;
+}
+//end modified
+
 
 /* modifed by chenjiyuan 11.29 */
 void NS_CLASS rrep_send_with_channel(RREP * rrep, rt_table_t * rev_rt,
@@ -352,10 +372,10 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 			   struct in_addr ip_dst, int ip_ttl,
 			   unsigned int ifindex)
 {
-	/*#ifdef MJW_DEBUG
+	#ifdef MJW_DEBUG
 	printf("开始处理修复rrep 来自：%d, dst:%d origin:%d, ttl:%d\n"
 		, ip_src.s_addr, rrep->dest_addr, rrep->orig_addr, ip_ttl);
-	#endif*/
+	#endif
 	u_int32_t rrep_lifetime, rrep_seqno, rrep_new_hcnt;
     u_int8_t pre_repair_hcnt = 0, pre_repair_flags = 0;
     rt_table_t *fwd_rt, *rev_rt;
@@ -395,11 +415,31 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 
     /* Determine whether there are any extensions */
     ext = (AODV_ext *) ((char *) rrep + RREP_SIZE);
-
     while ((rreplen - extlen) > RREP_SIZE) {
+	//modified by mjw 
+	printf("need to deal rrep_ext\n");
+	RREP_udest *ud = (RREP_udest*) (((char*)ext) + AODV_EXT_HDR_SIZE);
 	switch (ext->type) {
-	case RREP_EXT:
+	case RREP_UDEST_EXT:
 	    DEBUG(LOG_INFO, 0, "RREP include EXTENSION");
+		printf("%d %d\n",rrep_orig.s_addr, DEV_IFINDEX(ifindex).ipaddr.s_addr);
+		if(!(rrep_orig.s_addr == DEV_IFINDEX(ifindex).ipaddr.s_addr)) {
+			printf("on the way to origin, add route to dest :%d\n", ud->dest_addr);
+			struct in_addr ud_dest;
+			ud_dest.s_addr = ud->dest_addr;
+			fwd_rt = rt_table_find(ud_dest);
+			if (!fwd_rt) {
+				fwd_rt = rt_table_insert(ud_dest, ip_src, rrep_new_hcnt, rrep_seqno,
+				 rrep_lifetime, VALID, 0, ifindex);
+				rt_table_update(fwd_rt, ip_src, rrep_new_hcnt, rrep_seqno,
+				 	rrep_lifetime, VALID,
+				 	(fwd_rt->flags)&(!RT_REPAIR));
+			} else {
+				fwd_rt = rt_table_update(fwd_rt, ip_src, rrep_new_hcnt, rrep_seqno,
+				 rrep_lifetime, VALID,
+				 0 | fwd_rt->flags);
+			}
+		}
 	    /* Do something here */
 	    break;
 #ifdef CONFIG_GATEWAY
@@ -537,6 +577,7 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 	int i;
 	RERR* rerr = NULL;
 	struct in_addr rerr_unicast_dest;
+	printf("fuck!!!!!! %d\n", ip_src.s_addr);
 	for (i = 0; i < RT_TABLESIZE; i++) {
 		list_t *pos;
 		list_foreach(pos, &rt_tbl.tbl[i]) {
@@ -549,6 +590,8 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 				(rt_u->dest_seqno == 0 ||
 	       		(int32_t) rrep_seqno > (int32_t) rt_u->dest_seqno ||
 	       		(rrep_seqno == rt_u->dest_seqno && rrep_new_hcnt < fwd_rt->hcnt))*/) {
+					printf("fuck1!!!!!! %d\n", ip_src.s_addr);
+
 					rt_table_update(rt_u, ip_src, rrep_new_hcnt, rrep_seqno,
 				 	rrep_lifetime, VALID,
 				 	0);
@@ -558,9 +601,13 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 					#endif
 				} 
 				else if((rt_u->next_hop).s_addr == rrep_dest.s_addr) {
+					printf("fuck2!!!!!! %d\n", ip_src.s_addr);
+
 					rt_table_update(rt_u, ip_src, rrep_new_hcnt-1+rt_u->hcnt, rt_u->dest_seqno,
 				 	rrep_lifetime, VALID,
 				 	0);
+					printf("fuck3!!!!!! addr: %d ttl: %d\n", ip_src.s_addr, rrep_new_hcnt-1+rt_u->hcnt);
+
 					#ifdef MJW_DEBUG
 					printf("更新路由表项 dest:%d new_hcnt:%d, next:%d\n"
 							,rt_u->dest_addr.s_addr,rrep_new_hcnt-1+rt_u->hcnt,ip_src.s_addr);
@@ -585,7 +632,9 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 
 					if (!rerr) {
 						rerr =rerr_create(rerr_flags, rt_u->dest_addr, rt_u->dest_seqno);
-
+						//rerr mjw
+						rerr->rerr_id = this_host.rerr_id++;
+						rerr->rerr_origin_addr = this_host.devs[0].ipaddr.s_addr;
 						if (rt_u->nprec == 1)
 							rerr_unicast_dest =
 							FIRST_PREC(rt_u->precursors)->neighbor;
@@ -612,12 +661,13 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 
 		rt_table_t *rt_u = rt_table_find(rerr_unicast_dest);
 
-		if (rt_u && rerr->dest_count == 1 && rerr_unicast_dest.s_addr)
+		if (rt_u && rerr->dest_count == 1 && rerr_unicast_dest.s_addr) {
+			printf("rerr dest: %d\n", rerr_unicast_dest);
 			aodv_socket_send((AODV_msg *) rerr,
 					rerr_unicast_dest,
 					RERR_CALC_SIZE(rerr), 1,
 					&DEV_IFINDEX(rt_u->ifindex));
-
+		}
 		else if (rerr->dest_count > 0) {
 			for (i = 0; i < MAX_NR_INTERFACES; i++) {
 				struct in_addr dest;
@@ -667,12 +717,16 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 			   struct in_addr ip_dst, int ip_ttl,
 			   unsigned int ifindex)
 {
+	struct in_addr now_addr = this_host.devs[0].ipaddr;
+
     if(rrep->lr) {
+    	printf("[%.9f RREP_LOCAL]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
+            Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rrep->channel, rrep->orig_addr, rrep->dest_addr);
 		rrep_process_lr(rrep,rreplen,ip_src,ip_dst,ip_ttl,ifindex);
 		return;
 	}
-    struct in_addr now_addr = this_host.devs[0].ipaddr;
-    printf("[%.9f RREP]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
+    //struct in_addr now_addr = this_host.devs[0].ipaddr;
+    printf("[%.9f RREP_NORMAL]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
             Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rrep->channel, rrep->orig_addr, rrep->dest_addr);
 
     u_int32_t rrep_lifetime, rrep_seqno, rrep_new_hcnt;

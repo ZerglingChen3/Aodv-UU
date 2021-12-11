@@ -337,6 +337,13 @@ void NS_CLASS recv(Packet *p, Handler *)
 	struct hdr_ip *ih = HDR_IP(p);
 	struct in_addr saddr;
 	
+	struct in_addr now_addr = this_host.devs[0].ipaddr;
+	if(ch->ptype() == PT_AODVUU) {
+		printf("[%.9f] %d receive an aodv message\n", Scheduler::instance().clock(), now_addr);
+	} else {
+		printf("[%.9f] %d receive an aplication message\n", Scheduler::instance().clock(), now_addr);
+	}
+
 	/* Routing agent must be started before processing packets */
 	assert(initialized);
 
@@ -462,6 +469,8 @@ void NS_CLASS sendPacket(Packet *p, struct in_addr next_hop, double delay)
 		}
 		Packet *pp = p->copy();
 		pp->channel = channelNum;
+		printf("[FUCKKAAAA!!!!!!]\n");
+		printf("channelNum: %d\n, delay: %d\n", channelNum, delay);
 		Scheduler::instance().schedule(lllist[channelNum], pp, delay);
 	}
 	/* End buaa g410 */

@@ -99,6 +99,7 @@ void NS_CLASS route_discovery_timeout(void *arg)
 
 		// rreq_send(seek_entry->dest_addr, seek_entry->dest_seqno,
 		// 	  TTL_VALUE, seek_entry->flags);
+		printf("[%.9f RREQ TIMEOUT] seek_entry->dest_addr: %d\n",  Scheduler::instance().clock(), seek_entry->dest_addr);
 		for (int i = 0; i < Channel_Count; ++ i)
 			rreq_send_with_channel(seek_entry->dest_addr, seek_entry->dest_seqno,
 			 	  TTL_VALUE, seek_entry->flags, i);
