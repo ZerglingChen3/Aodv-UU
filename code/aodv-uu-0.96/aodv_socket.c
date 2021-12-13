@@ -214,6 +214,7 @@ void NS_CLASS aodv_socket_process_packet(AODV_msg * aodv_msg, int len,
 					 int ttl, unsigned int ifindex)
 {
 
+	printf("[AODV_ME] type: %d\n", aodv_msg->type);
     /* If this was a HELLO message... Process as HELLO. */
     if ((aodv_msg->type == AODV_RREP && ttl == 1 &&
 	 dst.s_addr == AODV_BROADCAST)) {
@@ -373,6 +374,7 @@ static void aodv_socket_read(int fd)
 void NS_CLASS aodv_socket_send(AODV_msg * aodv_msg, struct in_addr dst,
 			       int len, u_int8_t ttl, struct dev_info *dev)
 {
+	printf("[AODV_SOCKET_NOW_SEND_START] the size is: %d\n", len);
     int retval = 0;
     struct timeval now;
     /* Rate limit stuff: */
@@ -507,6 +509,7 @@ void NS_CLASS aodv_socket_send(AODV_msg * aodv_msg, struct in_addr dst,
 #ifdef NS_PORT
 	ch->addr_type() = NS_AF_NONE;
 
+	printf("[AODV_SOCKET_NOW_SEND_OK_1]\n");
 	sendPacket(p, dst, 0.0);
 #else
 
@@ -527,6 +530,7 @@ void NS_CLASS aodv_socket_send(AODV_msg * aodv_msg, struct in_addr dst,
 	ch->addr_type() = NS_AF_INET;
 	/* We trust the decision of next hop for all AODV messages... */
 
+	printf("[AODV_SOCKET_NOW_SEND_OK_2]\n");
 	if (dst.s_addr == AODV_BROADCAST)
 	    sendPacket(p, dst, 0.001 * Random::uniform());
 	else

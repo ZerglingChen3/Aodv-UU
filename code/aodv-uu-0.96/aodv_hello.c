@@ -114,11 +114,16 @@ void NS_CLASS hello_send(void *arg)
 			       this_host.seqno,
 			       DEV_NR(i).ipaddr,
 			       ALLOWED_HELLO_LOSS * HELLO_INTERVAL);
-		if (0) //switch to use this feature or not
+//		if (0) //switch to use this feature or not
 			{ //modified by XY
+				this_host.hello_sent++;
+				printf("------------info update begin\n");
 				for(int neib_index=0;neib_index<20;++neib_index){
+					if(this_host.neighbors[neib_index].ipaddr.s_addr==0)
+						break;
 					for (int channel = 0; channel < 5; ++channel)
 					{
+						printf("neib_index:%d\n",neib_index);
 						if ((this_host.neighbors[neib_index].channel_hello_head[channel] % 5) == ((this_host.neighbors[neib_index].channel_hello_tail[channel] + 1) % 5))
 						{
 							this_host.neighbors[neib_index].channel_hello_head[channel]++;
@@ -132,6 +137,9 @@ void NS_CLASS hello_send(void *arg)
 							double expect_connected_possibility = 0;
 							double status_change_possibility = 0;
 							{ // deliver rate
+								printf("caculating deliver rate\n");
+								printf("this_host.hello_sent:%d\n",this_host.hello_sent);
+								printf("this_host.neighbors[neib_index].channel_hello_remote_sent[channel]:%d\n",this_host.neighbors[neib_index].channel_hello_remote_sent[channel]);
 								double positive_rate = this_host.neighbors[neib_index].channel_hello_remote_received[channel] / this_host.hello_sent;
 								double negative_rate = this_host.neighbors[neib_index].channel_hello_self_received[channel] / this_host.neighbors[neib_index].channel_hello_remote_sent[channel];
 							}
@@ -150,6 +158,8 @@ void NS_CLASS hello_send(void *arg)
 									success_count += this_host.neighbors[neib_index].channel_hello_sequence[channel][now_index];
 									count++;
 								}
+								printf("caculating blabla\n");
+								printf("count:%d\n",count);
 								status_change_possibility = success_count / count;
 							}
 							// use status change possibility temporarily
@@ -157,6 +167,7 @@ void NS_CLASS hello_send(void *arg)
 						}
 						else
 						{
+							printf("before reaching 10\n");
 							int success_count = 0;
 							int count = 0;
 							for (int now_index = this_host.neighbors[neib_index].channel_hello_head[channel];
@@ -166,11 +177,12 @@ void NS_CLASS hello_send(void *arg)
 								success_count += this_host.neighbors[neib_index].channel_hello_sequence[channel][now_index];
 								count++;
 							}
+							printf("count:%d\n",count);
 							this_host.neighbors[neib_index].channel_cost[channel] = success_count / count;
 						}
 					}
 				}
-				
+				printf("---------info update end\n");
 			}
 	    /* Assemble a RREP extension which contain our neighbor set... */
 	    if (unidir_hack) {
@@ -232,6 +244,10 @@ void NS_CLASS hello_send(void *arg)
 /* Process a hello message */
 void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 {
+
+	struct in_addr now_addr = this_host.devs[0].ipaddr;
+    printf("[%.9f HELLO]now the address is: %d\n",Scheduler::instance().clock(), now_addr);
+
 	printf("[HELLO_PROCESS]\n");
     u_int32_t hello_seqno, timeout, hello_interval = HELLO_INTERVAL;
     u_int8_t state, flags = 0;
@@ -246,17 +262,20 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
     hello_dest.s_addr = hello->dest_addr;
     hello_seqno = ntohl(hello->dest_seqno);
 
-	if (0) //switch to use this feature or not
+//	if (0) //switch to use this feature or not
 	{ // modified by XY
 		int neib_index=0;
 		for(neib_index=0;neib_index<20;++neib_index){
 			if(this_host.neighbors[neib_index].ipaddr.s_addr == hello_dest.s_addr){
+				printf("~~~~~~~~~~~find record in the neighbor table, the ip is:%d~~~~~~~~~~~~~~~~\n", hello_dest.s_addr);
 				break;
 			}else if(this_host.neighbors[neib_index].ipaddr.s_addr==0){
+				printf("~~~~~~~~~~~~~didt find ip, create a new record, the ip is:%d~~~~~~~~~~~~~~\n", hello_dest.s_addr);
 				this_host.neighbors[neib_index].ipaddr.s_addr=hello_dest.s_addr;
 				break;
 			}
 		}
+		
 		printf("[HELLO_XY] from: %d channel:%d\n",hello->dest_addr, hello->channel);
 		RREP_ack *hello_ack;
 		int channel = hello->channel;
@@ -270,7 +289,7 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 		
 		hello_ack->hello_sent = this_host.hello_sent;
 		hello_ack->channel_hello_received = this_host.neighbors[neib_index].channel_hello_self_received[channel];
-		aodv_socket_send((AODV_msg *)hello_ack, hello_dest, NEXT_HOP_WAIT, MAXTTL, &DEV_IFINDEX(neib_index));
+		aodv_socket_send((AODV_msg *)hello_ack, hello_dest, RREP_ACK_SIZE, MAXTTL, &DEV_IFINDEX(ifindex));
 		printf("send hello_ack:%x to dest:%d, through channel:%d\n", hello_ack, hello_dest, hello->channel);
 		printf("[HELLO_XY_END]\n");
 	}

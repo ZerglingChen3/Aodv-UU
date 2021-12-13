@@ -134,7 +134,7 @@ RREP_ack *NS_CLASS rrep_ack_create()
 
     rrep_ack = (RREP_ack *) aodv_socket_new_msg();
     rrep_ack->type = AODV_RREP_ACK;
-    if(0) // switch to use this feature or not
+//    if(0) // switch to use this feature or not
     {//modified by XY
         rrep_ack->is_hello_ack = 0;
     }    
@@ -146,16 +146,12 @@ RREP_ack *NS_CLASS rrep_ack_create()
 void NS_CLASS rrep_ack_process(RREP_ack * rrep_ack, int rrep_acklen,
 			       struct in_addr ip_src, struct in_addr ip_dst)
 {
+	printf("---------------------------------------------------------------------------------\n");
     /* modified by chenjiyuan at 11.29 */
     rt_table_t *rt = rt_table_find(ip_src);
     /* end modified at 11.29 */
 
-    if (rt == NULL) {
-	DEBUG(LOG_WARNING, 0, "No RREP_ACK expected for %s", ip_to_str(ip_src));
-
-	return;
-    }
-	if (0) // switch to use this feature or not
+//if (0) // switch to use this feature or not
     { //modified by XY
         int neib_index=0;
         for(neib_index=0;neib_index<20;++neib_index){
@@ -168,11 +164,21 @@ void NS_CLASS rrep_ack_process(RREP_ack * rrep_ack, int rrep_acklen,
         }
         if (rrep_ack->is_hello_ack)
         {
-            printf("received hello ack from channel: %d\n",rrep_ack->channel);
+            printf("received hello ack from %d, channel: %d, have sent %d hellos\n",this_host.neighbors[neib_index].ipaddr.s_addr, rrep_ack->channel,this_host.hello_sent);
+			printf("have sent %d hello(s)\n",this_host.hello_sent);
             this_host.neighbors[neib_index].channel_hello_remote_received[rrep_ack->channel] = rrep_ack->channel_hello_received;
-            this_host.neighbors[neib_index].channel_hello_remote_sent[rrep_ack->channel] = rrep_ack->hello_sent;
+			for (int channel=0;channel<5;++channel){
+ 				this_host.neighbors[neib_index].channel_hello_remote_sent[channel] = rrep_ack->hello_sent;
+			}
         }
+		printf("---------------------------------------------------------------------------\n");
     }
+    if (rt == NULL) {
+	DEBUG(LOG_WARNING, 0, "No RREP_ACK expected for %s", ip_to_str(ip_src));
+
+	return;
+    }
+	
     DEBUG(LOG_DEBUG, 0, "Received RREP_ACK from %s", ip_to_str(ip_src));
 
     /* Remove unexpired timer for this RREP_ACK */
