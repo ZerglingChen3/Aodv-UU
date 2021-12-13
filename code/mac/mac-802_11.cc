@@ -3450,7 +3450,12 @@ Mac802_11::getNoisePower()
 int
 Mac802_11::getState()
 {
-	return tx_active_;
+	if (rx_state_ == 0) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
 }
 
 double
@@ -3504,14 +3509,3 @@ Mac802_11::getSNR()
 
 
 /* End MSQ */
-
-int
-Mac802_11::getState()
-{
-	if (rx_state_ == 0) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
-}
