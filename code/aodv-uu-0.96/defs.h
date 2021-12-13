@@ -91,6 +91,14 @@ struct neighbor_info {
     struct in_addr ipaddr;
     int neighbor_sta;
     int isValid;
+    //modified by XY
+    int channel_hello_self_received[5];
+    int channel_hello_remote_sent[5];
+    int channel_hello_remote_received[5];
+    int channel_hello_head[5];
+    int channel_hello_tail[5];
+    int channel_hello_sequence[5][10];
+    double channel_cost[5];
 };
 
 struct sta_info {
@@ -128,6 +136,8 @@ struct host_info {
     struct neighbor_info neighbors[20];
     struct sta_info stability; 
     /* End MSQ */
+    //modified by XY
+    int hello_sent;
 };
 
 
