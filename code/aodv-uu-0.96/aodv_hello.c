@@ -379,7 +379,7 @@ void NS_CLASS update_sta_info()
 		}
 	}
 	for (i = 0; i < 3; i++) {
-		if (maclist[i]->getState() == 0) {
+		if (maclist[i]->getState() == 1) {
 			this_host.stability.ava_channel_num++;
 		}
 		if (maclist[i]->getSNR() > this_host.stability.best_channel_SNR) {
@@ -390,7 +390,7 @@ void NS_CLASS update_sta_info()
 	double svmParams[5] = {0.76960165, -0.39568155, 1.98846181, 4.02854831, -13.08570038};
 	double svmResult = this_host.stability.neighbor_num * svmParams[0] + this_host.stability.neighbor_change * svmParams[1] + 
 						this_host.stability.ava_channel_num * svmParams[2] + this_host.stability.best_channel_SNR * svmParams[3] + svmParams[4];
-	if (svmResult < 0) {
+	if (svmResult < 0 || this_host.stability.neighbor_num == 0 || this_host.stability.ava_channel_num == 0) {
 		this_host.stability.isStable = 0;
 	}
 	else {
