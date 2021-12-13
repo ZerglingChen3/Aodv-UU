@@ -89,6 +89,9 @@ typedef struct {
 typedef struct {
     u_int8_t channel;
     u_int8_t type;
+    u_int8_t is_hello_ack;
+    u_int8_t hello_sent;
+    u_int8_t channel_hello_received;
     u_int8_t reserved;
 } RREP_ack;
 

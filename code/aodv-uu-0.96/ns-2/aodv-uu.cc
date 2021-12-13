@@ -168,6 +168,26 @@ tqtimer(this), ifqueue(0)
 	fixed_interface = 0;
 	channelNum = 0;
 	/* End MSQ */
+	if (0) //switch to use this feature or not
+	{ // modified by XY
+		this_host.hello_sent = 0;
+		for (int i = 0; i < 20; ++i)
+		{
+			for (int k = 0; k < 5; ++k)
+			{
+				this_host.neighbors[i].channel_hello_self_received[k] = 0;
+				this_host.neighbors[i].channel_hello_remote_sent[k] = 0;
+				this_host.neighbors[i].channel_hello_remote_received[k] = 0;
+				this_host.neighbors[i].channel_hello_head[k] = 0;
+				this_host.neighbors[i].channel_hello_tail[k] = 0;
+				for (int j = 0; j < 10; ++j)
+				{
+					this_host.neighbors[i].channel_hello_sequence[k][j] = 0;
+				}
+				this_host.neighbors[i].channel_cost[k] = 0.5;
+			}
+		}
+	}
 }
 
 
