@@ -875,6 +875,7 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 		(fwd_rt->state == INVALID || fwd_rt->flags & RT_UNIDIR ||
 		 cost < fwd_rt->cost))) {
             printf("only for test: dest_seqno: %d, rrep_seqno: %d, state: %d, cost: %lf\n", fwd_rt->dest_seqno, rrep_seqno, fwd_rt->state, cost);
+			printf("channel: %d, cost: %lf", channel, cost);
 	pre_repair_hcnt = fwd_rt->hcnt;
 	pre_repair_flags = fwd_rt->flags;
 
@@ -962,6 +963,8 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
         /*@ modify by chenjiyuan at 11.30 */
         //rrep_forward(rrep, rreplen, rev_rt, fwd_rt, --ip_ttl);
         printf("[RREP-FORWARD]\n");
+		channelNum = rev_rt->channel;
+		printf("cost: %lf, channel: %d", rev_rt->cost, rev_rt->channel);
         rrep_forward(rrep, RREP_COST_SIZE, rev_rt, fwd_rt, --ip_ttl);
         /* end modified at 11.30 */
 	} else {

@@ -200,7 +200,6 @@ void NS_CLASS processPacket(Packet * p)
 	    rreq_local_repair(fwd_rt, src_addr, ipd);
 	else
 	    rreq_route_discovery(dest_addr, rreq_flags, ipd);
-
 	return;
 
     } else {
@@ -210,9 +209,9 @@ void NS_CLASS processPacket(Packet * p)
 	struct hdr_cmn *ch = HDR_CMN(p);
 	struct in_addr now_addr = this_host.devs[0].ipaddr;
 	if(ch->ptype() == PT_AODVUU) {
-		printf("[%.9f] %d send an aodv message, next_hop:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr);
+		printf("[%.9f] %d send an aodv message, next_hop:%d, channelNum:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr, p->channel);
 	} else {
-		printf("[%.9f] %d send an aplication message, next_hop:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr);
+		printf("[%.9f] %d send an aplication message, next_hop:%d, channelNum:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr, p->channel);
 	}
 
 	/* When forwarding data, make sure we are sending HELLO messages */

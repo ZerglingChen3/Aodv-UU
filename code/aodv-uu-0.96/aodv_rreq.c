@@ -160,8 +160,8 @@ RREQ *NS_CLASS rreq_create_with_cost(u_int8_t flags, struct in_addr dest_addr,
 
     /* Immediately before a node originates a RREQ flood it must
        increment its sequence number... */
-    seqno_incr(this_host.seqno);
-    rreq->orig_seqno = htonl(this_host.seqno);
+    //seqno_incr(this_host.seqno);
+    rreq->orig_seqno = htonl(this_host.seqno)+1;
 
     if (flags & RREQ_JOIN)
         rreq->j = 1;
@@ -684,9 +684,6 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 		return;
 	}
 	// end modified
-	
-    printf("[%.9f RREQ]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d\n", 
-            Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rreq->channel, rreq->orig_addr, rreq->dest_addr);
 
 	/*#ifdef MJW_DEBUG
 		printf("开始处理普通rreq 来自：%d, dst:%d ttl:%d\n", ip_src.s_addr, rreq->dest_addr,ip_ttl);
@@ -706,6 +703,11 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
     rreq_dest_seqno = ntohl(rreq->dest_seqno);
     rreq_orig_seqno = ntohl(rreq->orig_seqno);
     rreq_new_hcnt = rreq->hcnt + 1;
+
+
+	
+    printf("[%.9f RREQ]now the address is: %d, source is : %d , target is: %d, ttl: %d, channelNum : %d, origin: %d, dest: %d, destno: %d, origno: %d\n", 
+            Scheduler::instance().clock(), now_addr, ip_src, ip_dst, ip_ttl, rreq->channel, rreq->orig_addr, rreq->dest_addr, rreq_dest_seqno, rreq_orig_seqno);
 
     /* modified by chenjiyuan 11.24 */
     int channel = rreq->channel; //todo: set channel
@@ -822,6 +824,7 @@ void NS_CLASS rreq_process(RREQ * rreq, int rreqlen, struct in_addr ip_src,
 				     rreq_orig_seqno, life, VALID,
 				     rev_rt->flags);
          */
+		printf("[test: %d, %d]", rev_rt->dest_seqno, rreq_orig_seqno);
         if (rev_rt->dest_seqno == 0 ||
             (int32_t) rreq_orig_seqno > (int32_t) rev_rt->dest_seqno ||
             (rreq_orig_seqno == rev_rt->dest_seqno &&
@@ -1062,8 +1065,8 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 
     gettimeofday(&now, NULL);
 
-    // if (seek_list_find(dest_addr))
-	// return;
+    if (seek_list_find(dest_addr))
+		return;
 
     /* If we already have a route entry, we use information from it. */
     /* modified by chenjiyuan 11.29*/
@@ -1087,7 +1090,6 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 	    ttl = rt->hcnt + TTL_INCREMENT;
 	}
 
-	ttl = 16;
 /* 	if (rt->flags & RT_INET_DEST) */
 /* 	    flags |= RREQ_DEST_ONLY; */
 
@@ -1098,9 +1100,12 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 	    rt_table_update_timeout(rt, 2 * NET_TRAVERSAL_TIME);
     }
 
+	ttl = 32;
+	printf("[TTL]%d\n, ttl");
     /* modified by chenjiyuan 11.29*/
     for (int i = 0; i < Channel_Count; ++ i)
         rreq_send_with_channel(dest_addr, dest_seqno, ttl, flags, i);
+	seqno_incr(this_host.seqno);
     /* end modified at 11.29*/
 
     /* Remember that we are seeking this destination */

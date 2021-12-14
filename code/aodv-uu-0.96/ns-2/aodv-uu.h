@@ -274,8 +274,47 @@ inline int NS_CLASS ifindex2devindex(unsigned int ifindex)
 }
 
 /*@ modified by chenjiyuan:11.23*/
-inline double getCost(struct in_addr src, struct in_addr dst, int channel) {
-    return 1.0;
+inline double getCost(struct in_addr src_addr, struct in_addr dest_addr, int channel) {
+	int src = src_addr.s_addr;
+	int dst = dest_addr.s_addr;
+	
+if (src == 0 && dst == 1 && channel == 0)
+        return 100;
+if (src == 1 && dst == 0 && channel == 0)
+        return 100;
+if (src == 0 && dst == 1 && channel == 1)
+        return 2000;
+if (src == 1 && dst == 0 && channel == 1)
+        return 2000;
+if (src == 0 && dst == 1 && channel == 2)
+        return 3000;
+if (src == 1 && dst == 0 && channel == 2)
+        return 3000;
+if (src == 1 && dst == 2 && channel == 0)
+        return 6000;
+if (src == 2 && dst == 1 && channel == 0)
+        return 6000;
+if (src == 1 && dst == 2 && channel == 1)
+        return 100;
+if (src == 2 && dst == 1 && channel == 1)
+        return 100;
+if (src == 1 && dst == 2 && channel == 2)
+        return 3000;
+if (src == 2 && dst == 1 && channel == 2)
+        return 3000;
+if (src == 2 && dst == 3 && channel == 0)
+        return 1000;
+if (src == 3 && dst == 2 && channel == 0)
+        return 1000;
+if (src == 2 && dst == 3 && channel == 1)
+        return 3000;
+if (src == 3 && dst == 2 && channel == 1)
+        return 3000;
+if (src == 2 && dst == 3 && channel == 2)
+        return 10;
+if (src == 3 && dst == 2 && channel == 2)
+        return 10;
+	//return 1.0;
 }
 /* end modified*/
 
