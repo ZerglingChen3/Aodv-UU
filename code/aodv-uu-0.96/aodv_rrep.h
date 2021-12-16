@@ -67,6 +67,8 @@ typedef struct {
     u_int32_t lifetime;
     //modified by mjw
     u_int32_t dest_count;
+    // modified by XY
+    u_int32_t hello_sent;
 } RREP;
 
 #define RREP_SIZE sizeof(RREP)
@@ -89,9 +91,11 @@ typedef struct {
 typedef struct {
     u_int8_t channel;
     u_int8_t type;
+    // modified by XY
     u_int8_t is_hello_ack;
-    u_int8_t hello_sent;
+    u_int8_t hello_index;
     u_int8_t channel_hello_received;
+    u_int8_t host_stability;
     u_int8_t reserved;
 } RREP_ack;
 

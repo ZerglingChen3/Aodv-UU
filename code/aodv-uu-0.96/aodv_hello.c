@@ -116,7 +116,22 @@ void NS_CLASS hello_send(void *arg)
 			       ALLOWED_HELLO_LOSS * HELLO_INTERVAL);
 //		if (0) //switch to use this feature or not
 			{ //modified by XY
+                // update stability sequence
 				this_host.hello_sent++;
+                this_host.stability_sequence[this_host.hello_sent % MAX_SEQUENCE_LEN]=this_host.stability.isStable;
+
+                // move head and tail pointer
+                int head=this_host.hello_head;
+                int tail=this_host.hello_tail;
+                if (head % MAX_SEQUENCE_LEN == (tail + 1) % MAX_SEQUENCE_LEN)
+                {
+                    this_host.hello_head++;
+                    head++;
+                }
+                this_host.hello_tail++;
+                tail++;
+
+                // update every channel cost
 				printf("------------info update begin\n");
 				for(int neib_index=0;neib_index<20;++neib_index){
 					if(this_host.neighbors[neib_index].ipaddr.s_addr==0)
@@ -124,14 +139,7 @@ void NS_CLASS hello_send(void *arg)
 					for (int channel = 0; channel < 5; ++channel)
 					{
 						printf("neib_index:%d\n",neib_index);
-						if ((this_host.neighbors[neib_index].channel_hello_head[channel] % 5) == ((this_host.neighbors[neib_index].channel_hello_tail[channel] + 1) % 5))
-						{
-							this_host.neighbors[neib_index].channel_hello_head[channel]++;
-							this_host.neighbors[neib_index].channel_hello_head[channel] %= 5;
-						}
-						this_host.neighbors[neib_index].channel_hello_tail[channel]++;
-						this_host.neighbors[neib_index].channel_hello_tail[channel] %= 5;
-						if ((this_host.neighbors[neib_index].channel_hello_head[channel] % 5) == (this_host.neighbors[neib_index].channel_hello_tail[channel] + 1 % 5))
+						if (head % MAX_SEQUENCE_LEN == (tail + 1) % MAX_SEQUENCE_LEN)
 						{
 							double deliver_rate = 0;
 							double expect_connected_possibility = 0;
@@ -139,9 +147,13 @@ void NS_CLASS hello_send(void *arg)
 							{ // deliver rate
 								printf("caculating deliver rate\n");
 								printf("this_host.hello_sent:%d\n",this_host.hello_sent);
-								printf("this_host.neighbors[neib_index].channel_hello_remote_sent[channel]:%d\n",this_host.neighbors[neib_index].channel_hello_remote_sent[channel]);
-								double positive_rate = this_host.neighbors[neib_index].channel_hello_remote_received[channel] / this_host.hello_sent;
-								double negative_rate = this_host.neighbors[neib_index].channel_hello_self_received[channel] / this_host.neighbors[neib_index].channel_hello_remote_sent[channel];
+                                double self_sent=this_host.hello_sent;
+                                double self_received=this_host.neighbors[neib_index].channel_hello_self_received[channel];
+                                double remote_sent=this_host.neighbors[neib_index].channel_hello_remote_sent;
+                                double remote_received=this_host.neighbors[neib_index].channel_hello_remote_received[channel];
+								double positive_rate = remote_received / self_sent;
+								double negative_rate = self_received / remote_sent;
+                                deliver_rate = positive_rate * negative_rate;
 							}
 							{ // arma model
 								// use time interval every two hello msg
@@ -149,18 +161,12 @@ void NS_CLASS hello_send(void *arg)
 								1;
 							}
 							{ //
-								int success_count = 0;
-								int count = 0;
-								for (int now_index = this_host.neighbors[neib_index].channel_hello_head[channel];
-									now_index != this_host.neighbors[neib_index].channel_hello_tail[channel];
-									now_index = (now_index + 1) % 5)
+                                int stable_count = 0;
+                                for(int now_index = head; now_index < tail; ++now_index)
 								{
-									success_count += this_host.neighbors[neib_index].channel_hello_sequence[channel][now_index];
-									count++;
+                                    stable_count += this_host.stability_sequence[now_index] && this_host.neighbors[neib_index].host_stability_sequence[now_index];
 								}
-								printf("caculating blabla\n");
-								printf("count:%d\n",count);
-								status_change_possibility = success_count / count;
+								status_change_possibility = 1.0 * stable_count / MAX_SEQUENCE_LEN;
 							}
 							// use status change possibility temporarily
 							this_host.neighbors[neib_index].channel_cost[channel] = 0.33 * deliver_rate + 0.66 * status_change_possibility;
@@ -170,11 +176,9 @@ void NS_CLASS hello_send(void *arg)
 							printf("before reaching 10\n");
 							int success_count = 0;
 							int count = 0;
-							for (int now_index = this_host.neighbors[neib_index].channel_hello_head[channel];
-								now_index != this_host.neighbors[neib_index].channel_hello_tail[channel];
-								now_index = (now_index + 1) % 5)
+                            for(int now_index = head; now_index < tail; ++now_index)
 							{
-								success_count += this_host.neighbors[neib_index].channel_hello_sequence[channel][now_index];
+								success_count += this_host.neighbors[neib_index].channel_hello_sequence[channel][now_index % MAX_SEQUENCE_LEN];
 								count++;
 							}
 							printf("count:%d\n",count);
@@ -224,6 +228,10 @@ void NS_CLASS hello_send(void *arg)
 		update_neighbor_info();
 		rrep->res1 = this_host.stability.isStable;
 		/* End MSQ */
+        //if(0)
+        {//modified by XY
+            rrep->hello_sent = this_host.hello_sent;
+        }
 	    aodv_socket_send((AODV_msg *) rrep, dest, msg_size, 1, &DEV_NR(i));
 	}
 
@@ -267,28 +275,30 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 		int neib_index=0;
 		for(neib_index=0;neib_index<20;++neib_index){
 			if(this_host.neighbors[neib_index].ipaddr.s_addr == hello_dest.s_addr){
-				printf("~~~~~~~~~~~find record in the neighbor table, the ip is:%d~~~~~~~~~~~~~~~~\n", hello_dest.s_addr);
+				// printf("~~~~~~~~~~~find record in the neighbor table, the ip is:%d~~~~~~~~~~~~~~~~\n", hello_dest.s_addr);
 				break;
 			}else if(this_host.neighbors[neib_index].ipaddr.s_addr==0){
-				printf("~~~~~~~~~~~~~didt find ip, create a new record, the ip is:%d~~~~~~~~~~~~~~\n", hello_dest.s_addr);
+				// printf("~~~~~~~~~~~~~didt find ip, create a new record, the ip is:%d~~~~~~~~~~~~~~\n", hello_dest.s_addr);
 				this_host.neighbors[neib_index].ipaddr.s_addr=hello_dest.s_addr;
 				break;
 			}
 		}
 		
 		printf("[HELLO_XY] from: %d channel:%d\n",hello->dest_addr, hello->channel);
-		RREP_ack *hello_ack;
 		int channel = hello->channel;
 
 		this_host.neighbors[neib_index].channel_hello_self_received[channel]++;
-		this_host.neighbors[neib_index].channel_hello_sequence[channel][this_host.neighbors[neib_index].channel_hello_tail[channel]] = 1;
+		this_host.neighbors[neib_index].channel_hello_sequence[channel][this_host.hello_tail] = 1;
+        this_host.neighbors[neib_index].channel_hello_remote_sent=hello->hello_sent;
 
+        // send hello_ack
+		RREP_ack *hello_ack;
 		hello_ack = rrep_ack_create();
 		hello_ack->is_hello_ack = 1;
 		hello_ack->channel = hello->channel;
-		
-		hello_ack->hello_sent = this_host.hello_sent;
-		hello_ack->channel_hello_received = this_host.neighbors[neib_index].channel_hello_self_received[channel];
+        hello_ack->hello_index = hello->hello_sent;
+		hello_ack->channel_hello_received = 
+            this_host.neighbors[neib_index].channel_hello_self_received[channel];
 		aodv_socket_send((AODV_msg *)hello_ack, hello_dest, RREP_ACK_SIZE, MAXTTL, &DEV_IFINDEX(ifindex));
 		printf("send hello_ack:%x to dest:%d, through channel:%d\n", hello_ack, hello_dest, hello->channel);
 		printf("[HELLO_XY_END]\n");

@@ -86,19 +86,26 @@
 #define IFNAMSIZ 16
 #endif
 
+// modified by XY
+#ifndef MAX_SEQUENCE_LEN
+#define MAX_SEQUENCE_LEN 10
+#endif
+#ifndef MAX_CHANNEL_NUM
+#define MAX_CHANNEL_NUM 5
+#endif
+// end modified by XY
 /* Added by MSQ */
 struct neighbor_info {
     struct in_addr ipaddr;
     int neighbor_sta;
     int isValid;
     //modified by XY
-    int channel_hello_self_received[5];
-    int channel_hello_remote_sent[5];
-    int channel_hello_remote_received[5];
-    int channel_hello_head[5];
-    int channel_hello_tail[5];
-    int channel_hello_sequence[5][10];
-    double channel_cost[5];
+    int channel_hello_self_received[MAX_CHANNEL_NUM];
+    int channel_hello_remote_sent;
+    int channel_hello_remote_received[MAX_CHANNEL_NUM];
+    int channel_hello_sequence[MAX_CHANNEL_NUM][MAX_SEQUENCE_LEN];
+    int host_stability_sequence[MAX_SEQUENCE_LEN];
+    double channel_cost[MAX_CHANNEL_NUM];
 };
 
 struct sta_info {
@@ -138,6 +145,9 @@ struct host_info {
     /* End MSQ */
     //modified by XY
     int hello_sent;
+    int hello_head;
+    int hello_tail;
+    int stability_sequence[MAX_SEQUENCE_LEN];
 };
 
 

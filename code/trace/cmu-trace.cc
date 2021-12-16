@@ -1109,10 +1109,16 @@ void CMUTrace::format_aodvuu(Packet *p, int offset) {
                         // Tagged format currently not supported
                 } else if (newtrace_) {
 
+					if(aodv_rrep_ack->is_hello_ack){
+                        sprintf(pt_->buffer() + offset,
+                                "-P aodvuu -Pt 0x%x HELLO-ACK ",
+                                aodv_rrep_ack->type);
+                    }else{
                         sprintf(pt_->buffer() + offset,
                                 "-P aodvuu -Pt 0x%x RREP-ACK ",
                                 aodv_rrep_ack->type);
-                } else {
+                    }
+				} else {
 
                         sprintf(pt_->buffer() + offset,
                                 "[%d] (RREP-ACK)",

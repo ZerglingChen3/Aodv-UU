@@ -274,9 +274,29 @@ inline int NS_CLASS ifindex2devindex(unsigned int ifindex)
 }
 
 /*@ modified by chenjiyuan:11.23*/
-inline double getCost(struct in_addr src_addr, struct in_addr dest_addr, int channel) {
+inline double NS_CLASS getCost(struct in_addr src_addr, struct in_addr dest_addr, int channel) {
 	int src = src_addr.s_addr;
 	int dst = dest_addr.s_addr;
+
+#if 0
+    //if(0)
+    {//modified by XY
+        int index=0;
+        for(index = 0;index < 20; ++index)
+        {
+            if(this_host.neighbors[index].ipaddr.s_addr == dst){
+                break;
+            }
+            if(index == 19)
+            {
+                printf("ERROR!!!");
+                return -1;
+            }
+        }
+        return this_host.neighbors[index].channel_cost[channel];
+
+    }
+#endif
 	
 if (src == 0 && dst == 1 && channel == 0)
         return 100;

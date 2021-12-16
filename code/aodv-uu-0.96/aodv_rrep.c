@@ -137,6 +137,8 @@ RREP_ack *NS_CLASS rrep_ack_create()
 //    if(0) // switch to use this feature or not
     {//modified by XY
         rrep_ack->is_hello_ack = 0;
+		rrep_ack->hello_index = 0;
+        rrep_ack->host_stability = 0;
     }    
 	DEBUG(LOG_DEBUG, 0, "Assembled RREP_ack");
 
@@ -153,24 +155,24 @@ void NS_CLASS rrep_ack_process(RREP_ack * rrep_ack, int rrep_acklen,
 
 //if (0) // switch to use this feature or not
     { //modified by XY
-        int neib_index=0;
-        for(neib_index=0;neib_index<20;++neib_index){
-            if(this_host.neighbors[neib_index].ipaddr.s_addr==0){
-                this_host.neighbors[neib_index].ipaddr.s_addr=ip_src.s_addr;
-                break;
-            }else if(this_host.neighbors[neib_index].ipaddr.s_addr==ip_src.s_addr){
-                break;
-            }
-        }
         if (rrep_ack->is_hello_ack)
         {
-            printf("received hello ack from %d, channel: %d, have sent %d hellos\n",this_host.neighbors[neib_index].ipaddr.s_addr, rrep_ack->channel,this_host.hello_sent);
-			printf("have sent %d hello(s)\n",this_host.hello_sent);
+            int neib_index=0;
+            for(neib_index=0;neib_index<20;++neib_index){
+                if(this_host.neighbors[neib_index].ipaddr.s_addr==0){
+                    this_host.neighbors[neib_index].ipaddr.s_addr=ip_src.s_addr;
+                    break;
+                }else if(this_host.neighbors[neib_index].ipaddr.s_addr==ip_src.s_addr){
+                    break;
+                }
+            }
+            if(rrep_ack->hello_index >= this_host.hello_head)
+            {
+                this_host.neighbors[neib_index].host_stability_sequence[rrep_ack->hello_index % MAX_SEQUENCE_LEN] = rrep_ack->host_stability;
+            }
             this_host.neighbors[neib_index].channel_hello_remote_received[rrep_ack->channel] = rrep_ack->channel_hello_received;
-			for (int channel=0;channel<5;++channel){
- 				this_host.neighbors[neib_index].channel_hello_remote_sent[channel] = rrep_ack->hello_sent;
-			}
-        }
+            return;
+		}
 		printf("---------------------------------------------------------------------------\n");
     }
     if (rt == NULL) {
