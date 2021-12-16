@@ -253,6 +253,7 @@ protected:
 	struct host_info this_host;
 	unsigned int dev_indices[MAX_NR_INTERFACES];
 	inline int ifindex2devindex(unsigned int ifindex);
+	inline double getCost(struct in_addr src_addr, struct in_addr dest_addr, int channel);
 
 /* From timer_queue.c */
 	list_t TQ;
