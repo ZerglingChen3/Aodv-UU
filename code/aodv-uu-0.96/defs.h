@@ -141,10 +141,10 @@ struct host_info {
         struct dev_info devs[MAX_NR_INTERFACES+1]; /* Add +1 for returning as "error" in ifindex2devindex. */
     /* Added by MSQ */
     struct neighbor_info neighbors[20];
+    int neighbor_num;
     struct sta_info stability; 
     /* End MSQ */
     //modified by XY
-    int hello_sent;
     int hello_head;
     int hello_tail;
     int stability_sequence[MAX_SEQUENCE_LEN];
