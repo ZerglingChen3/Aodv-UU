@@ -170,7 +170,7 @@ tqtimer(this), ifqueue(0)
 	/* End MSQ */
 	//if (0) //switch to use this feature or not
 	{ // modified by XY
-		this_host.hello_sent = 0;
+        this_host.neighbor_num = 0;
         this_host.hello_head=this_host.hello_tail = 0;
         for (int i = 0; i < MAX_SEQUENCE_LEN; ++i)
             this_host.stability_sequence[i]=0;

@@ -157,6 +157,7 @@ void NS_CLASS rrep_ack_process(RREP_ack * rrep_ack, int rrep_acklen,
     { //modified by XY
         if (rrep_ack->is_hello_ack)
         {
+            printf("[%.9f] %d received Hello_ack from %d\n", Scheduler::instance().clock(),this_host.devs[0].ipaddr, ip_src);
             int neib_index=0;
             for(neib_index=0;neib_index<20;++neib_index){
                 if(this_host.neighbors[neib_index].ipaddr.s_addr==0){
