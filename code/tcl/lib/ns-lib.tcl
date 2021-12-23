@@ -2339,7 +2339,7 @@ Simulator instproc workMode {val} {
     $self set workMode_ $val
 }
 
-Simulator instproc noiseChannel{ } {
+Simulator instproc noiseChannel {val} {
     $self set noiseChannel_ $val
 }
 

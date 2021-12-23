@@ -15,8 +15,8 @@ void init() {
     printf("set val(ant) Antenna/OmniAntenna ;# antenna model\n");
     printf("set val(ifqlen) 50 ;# max packet in ifq\n");
     printf("set val(rp) AODVUU ;# routing protocol\n");
-    printf("set val(x) 700 ;# X dimension of topography\n");
-    printf("set val(y) 700 ;# Y dimension of topography\n");
+    printf("set val(x) 1500 ;# X dimension of topography\n");
+    printf("set val(y) 1500 ;# Y dimension of topography\n");
     printf("set val(stop) 42 ;# nam stop time\n");
     printf("set val(nn) %d ;# number of mobilenodes\n", Normal+Noise);
     printf("set val(nc) 3 ;# number of channels\n");
@@ -73,7 +73,7 @@ void init() {
                  "}\n";
     printf(forPattern.c_str());
     nsPattern = string("$ns_ node-config -workMode -1 \\\n") +
-                       "-noiseChannel 0 \n"; //this place we can change the disturb channel, now it set to 0
+                       "-noiseChannel -1 \n"; //this place we can change the disturb channel, now it set to 0
     printf(nsPattern.c_str());
     forPattern = string("for {set i ") + to_string(Normal) + "} {$i < " + to_string(Normal+Noise) + "} {incr i} {\n" +
                  "  set n($i) [$ns_ node]\n" +

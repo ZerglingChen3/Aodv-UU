@@ -8,10 +8,10 @@ set val(ll) LL ;# link layer type
 set val(ant) Antenna/OmniAntenna ;# antenna model
 set val(ifqlen) 50 ;# max packet in ifq
 set val(rp) AODVUU ;# routing protocol
-set val(x) 700 ;# X dimension of topography
-set val(y) 700 ;# Y dimension of topography
+set val(x) 1300 ;# X dimension of topography
+set val(y) 1300 ;# Y dimension of topography
 set val(stop) 42 ;# nam stop time
-set val(nn) 13 ;# number of mobilenodes
+set val(nn) 15 ;# number of mobilenodes
 set val(nc) 3 ;# number of channels
 set val(ni) 3 ;# number of interfaces, <= number of channels
 set pktsize 1000 ;# packet size in bytes
@@ -53,113 +53,124 @@ for {set i 0} {$i < $val(nc)} {incr i} {
   $ns_ add-channel $i $chan($i)
 }
 puts "begin to create nodes"
-for {set i 0} {$i < 11} {incr i} {
+for {set i 0} {$i < 14} {incr i} {
   set n($i) [$ns_ node]
   $god_ new_node $n($i)
 }
 $ns_ node-config -workMode -1 \
--noiseChannel 0 
-for {set i 11} {$i < 13} {incr i} {
+-noiseChannel -1 
+for {set i 14} {$i < 15} {incr i} {
   set n($i) [$ns_ node]
   $god_ new_node $n($i)
 }
 puts "created nodes"
 set nodedist 250
 
-$n(0) set X_ 100
-$n(0) set Y_ 200
+$n(0) set X_ 700
+$n(0) set Y_ 100
 $n(0) set Z_ 0
-$ns_ initial_node_pos $n(0) 25
+$ns_ initial_node_pos $n(0) 50
 $n(0) random-motion 0
-$n(1) set X_ 100
-$n(1) set Y_ 400
+$n(1) set X_ 700
+$n(1) set Y_ 250
 $n(1) set Z_ 0
-$ns_ initial_node_pos $n(1) 25
+$ns_ initial_node_pos $n(1) 50
 $n(1) random-motion 0
-$n(2) set X_ 270
-$n(2) set Y_ 100
+$n(2) set X_ 500
+$n(2) set Y_ 300
 $n(2) set Z_ 0
-$ns_ initial_node_pos $n(2) 25
+$ns_ initial_node_pos $n(2) 50
 $n(2) random-motion 0
-$n(3) set X_ 440
-$n(3) set Y_ 200
+$n(3) set X_ 300
+$n(3) set Y_ 300
 $n(3) set Z_ 0
-$ns_ initial_node_pos $n(3) 25
+$ns_ initial_node_pos $n(3) 50
 $n(3) random-motion 0
-$n(4) set X_ 440
-$n(4) set Y_ 400
+$n(4) set X_ 200
+$n(4) set Y_ 500
 $n(4) set Z_ 0
-$ns_ initial_node_pos $n(4) 25
+$ns_ initial_node_pos $n(4) 50
 $n(4) random-motion 0
-$n(5) set X_ 270
-$n(5) set Y_ 500
+$n(5) set X_ 400
+$n(5) set Y_ 520
 $n(5) set Z_ 0
-$ns_ initial_node_pos $n(5) 25
+$ns_ initial_node_pos $n(5) 50
 $n(5) random-motion 0
-$n(6) set X_ 270
-$n(6) set Y_ 300
+$n(6) set X_ 200
+$n(6) set Y_ 700
 $n(6) set Z_ 0
-$ns_ initial_node_pos $n(6) 25
+$ns_ initial_node_pos $n(6) 50
 $n(6) random-motion 0
-$n(7) set X_ 610
-$n(7) set Y_ 500
+$n(7) set X_ 300
+$n(7) set Y_ 700
 $n(7) set Z_ 0
-$ns_ initial_node_pos $n(7) 25
+$ns_ initial_node_pos $n(7) 50
 $n(7) random-motion 0
-$n(8) set X_ 780
-$n(8) set Y_ 400
+$n(8) set X_ 900
+$n(8) set Y_ 300
 $n(8) set Z_ 0
-$ns_ initial_node_pos $n(8) 25
+$ns_ initial_node_pos $n(8) 50
 $n(8) random-motion 0
-$n(9) set X_ 780
-$n(9) set Y_ 200
+$n(9) set X_ 900
+$n(9) set Y_ 500
 $n(9) set Z_ 0
-$ns_ initial_node_pos $n(9) 25
+$ns_ initial_node_pos $n(9) 50
 $n(9) random-motion 0
-$n(10) set X_ 610
-$n(10) set Y_ 100
+$n(10) set X_ 950
+$n(10) set Y_ 450
 $n(10) set Z_ 0
-$ns_ initial_node_pos $n(10) 25
+$ns_ initial_node_pos $n(10) 50
 $n(10) random-motion 0
-$n(11) set X_ 10
-$n(11) set Y_ 300
+$n(11) set X_ 925
+$n(11) set Y_ 600
 $n(11) set Z_ 0
-$ns_ initial_node_pos $n(11) 25
+$ns_ initial_node_pos $n(11) 50
 $n(11) random-motion 0
-$n(12) set X_ 10
+$n(12) set X_ 700
 $n(12) set Y_ 700
 $n(12) set Z_ 0
-$ns_ initial_node_pos $n(12) 25
+$ns_ initial_node_pos $n(12) 50
 $n(12) random-motion 0
+$n(13) set X_ 500
+$n(13) set Y_ 800
+$n(13) set Z_ 0
+$ns_ initial_node_pos $n(13) 50
+$n(13) random-motion 0
+$n(14) set X_ 100
+$n(14) set Y_ 1300
+$n(14) set Z_ 0
+$ns_ initial_node_pos $n(14) 50
+$n(14) random-motion 0
 
 set udp0 [new Agent/UDP]
 $ns_ attach-agent $n(0) $udp0
 set sink0 [new Agent/Null]
-$ns_ attach-agent $n(1) $sink0
+$ns_ attach-agent $n(13) $sink0
 $ns_ connect $udp0 $sink0
 set cbr0 [new Application/Traffic/CBR]
 $cbr0 attach-agent $udp0
 $cbr0 set packetSize_ $pktsize
 $cbr0 set interval_ $pktrate
-$ns_ at 0.000000 "$cbr0 start"
-$ns_ at 10.000000 "$cbr0 stop"
+$ns_ at 2.000000 "$cbr0 start"
+$ns_ at 20.000000 "$cbr0 stop"
 
 set udp1 [new Agent/UDP]
-$ns_ attach-agent $n(0) $udp1
+$ns_ attach-agent $n(4) $udp1
 set sink1 [new Agent/Null]
-$ns_ attach-agent $n(7) $sink1
+$ns_ attach-agent $n(9) $sink1
 $ns_ connect $udp1 $sink1
 set cbr1 [new Application/Traffic/CBR]
 $cbr1 attach-agent $udp1
 $cbr1 set packetSize_ $pktsize
 $cbr1 set interval_ $pktrate
-$ns_ at 10.000000 "$cbr1 start"
-$ns_ at 42.000000 "$cbr1 stop"
+$ns_ at 20.000000 "$cbr1 start"
+$ns_ at 32.000000 "$cbr1 stop"
 
-$ns_ at 2.000000 "$n(11) setdest 100 300 10000"
-$ns_ at 15.000000 "$n(12) setdest 270 300 10000"
-$ns_ at 25.000000 "$n(4) setdest 50 800 10000"
-$ns_ at 25.000000 "$n(5) setdest 50 900 10000"
+$ns_ at 8.000000 "$n(14) setdest 100 600 2000"
+$ns_ at 8.500000 "$n(14) setdest 100 200 2000"
+$ns_ at 12.000000 "$n(10) setdest 1250 500 2000"
+$ns_ at 17.000000 "$n(14) setdest 100 600 2000"
+$ns_ at 17.500000 "$n(14) setdest 100 1250 2000"
 
 set last_node_id [expr $val(nn)-1]
 proc finish {} {
