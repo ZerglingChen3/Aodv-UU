@@ -1065,8 +1065,10 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 
     gettimeofday(&now, NULL);
 
-    if (seek_list_find(dest_addr))
+    if (seek_list_find(dest_addr)) {
+		printf("[RREQ_ROUTE_ABORT]\n");
 		return;
+	}
 
     /* If we already have a route entry, we use information from it. */
     /* modified by chenjiyuan 11.29*/
