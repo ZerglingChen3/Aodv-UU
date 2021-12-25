@@ -153,7 +153,7 @@ $cbr0 attach-agent $udp0
 $cbr0 set packetSize_ $pktsize
 $cbr0 set interval_ $pktrate
 $ns_ at 2.000000 "$cbr0 start"
-$ns_ at 17.000000 "$cbr0 stop"
+$ns_ at 16.000000 "$cbr0 stop"
 
 set udp1 [new Agent/UDP]
 $ns_ attach-agent $n(3) $udp1
@@ -164,8 +164,8 @@ set cbr1 [new Application/Traffic/CBR]
 $cbr1 attach-agent $udp1
 $cbr1 set packetSize_ $pktsize
 $cbr1 set interval_ $pktrate
-$ns_ at 15.000000 "$cbr1 start"
-$ns_ at 23.000000 "$cbr1 stop"
+$ns_ at 16.000000 "$cbr1 start"
+$ns_ at 24.000000 "$cbr1 stop"
 
 set udp2 [new Agent/UDP]
 $ns_ attach-agent $n(4) $udp2
@@ -176,7 +176,7 @@ set cbr2 [new Application/Traffic/CBR]
 $cbr2 attach-agent $udp2
 $cbr2 set packetSize_ $pktsize
 $cbr2 set interval_ $pktrate
-$ns_ at 25.000000 "$cbr2 start"
+$ns_ at 26.000000 "$cbr2 start"
 $ns_ at 35.000000 "$cbr2 stop"
 
 $ns_ at 6.000000 "$n(14) setdest 100 600 2000"

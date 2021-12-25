@@ -1,0 +1,11 @@
+[2.090000000] 0 receive an aplication message
+[2.090000000] 0 send an aplication message, next_hop:1, channelNum:1
+[2.092641509] 1 receive an aplication message
+[2.092641509] 1 send an aplication message, next_hop:2, channelNum:2
+[2.095433052] 2 receive an aplication message
+[2.095433052] 2 send an aplication message, next_hop:5, channelNum:0
+[2.098843331] 5 receive an aplication message
+[2.098843331] 5 send an aplication message, next_hop:7, channelNum:0
+[2.101794872] 7 receive an aplication message
+[2.101794872] 7 send an aplication message, next_hop:13, channelNum:1
+[2.110743043] 13 receive an aplication message
