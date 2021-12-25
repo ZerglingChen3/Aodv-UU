@@ -46,7 +46,7 @@
 #define ALLOWED_HELLO_LOSS      2
 /* If expanding ring search is used, BLACKLIST_TIMEOUT should be?: */
 #define BLACKLIST_TIMEOUT       RREQ_RETRIES * NET_TRAVERSAL_TIME + (TTL_THRESHOLD - TTL_START)/TTL_INCREMENT + 1 + RREQ_RETRIES
-#define HELLO_INTERVAL          1000
+#define HELLO_INTERVAL          300
 #define LOCAL_ADD_TTL           2
 #define MAX_REPAIR_TTL          3 * NET_DIAMETER / 10
 #define MY_ROUTE_TIMEOUT        2 * ACTIVE_ROUTE_TIMEOUT
@@ -55,7 +55,7 @@
 #define NEXT_HOP_WAIT           NODE_TRAVERSAL_TIME + 10
 #define NODE_TRAVERSAL_TIME     35
 #define PATH_DISCOVERY_TIME     2 * NET_TRAVERSAL_TIME
-#define RERR_TIME               NET_TRAVERSAL_TIME
+#define RERR_TIME               1 * NET_TRAVERSAL_TIME
 #define RERR_RATELIMIT          10
 #define RING_TRAVERSAL_TIME     NODE_TRAVERSAL_TIME * (TTL_VALUE + TIMEOUT_BUFFER)
 #define RREQ_RETRIES            2

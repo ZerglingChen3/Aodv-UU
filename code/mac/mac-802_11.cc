@@ -341,7 +341,7 @@ Mac802_11::command(int argc, const char*const* argv)
             noiseChannel = atoi(argv[3]);
 			channelNum = atoi(argv[4]);
 			//printf("workMode is %d, noiseChannel is %d\n", workMode, noiseChannel);
-            noiseInterval = 0.01;
+            noiseInterval = 0.001;
             if (workMode < 0) {
 				if (noiseChannel == channelNum || noiseChannel == -1) {
 					printf("channel %d begin to make noise\n", channelNum);

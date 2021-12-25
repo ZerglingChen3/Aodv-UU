@@ -36,6 +36,7 @@
 #include "defs.h"
 #include "debug.h"
 #include "params.h"
+#define MJW_DEBUG
 
 extern int unidir_hack, optimized_hellos, llfeedback;
 
@@ -159,19 +160,18 @@ void NS_CLASS rrep_ack_process(RREP_ack * rrep_ack, int rrep_acklen,
         {
             printf("[%.9f] %d received Hello_ack from %d\n", Scheduler::instance().clock(),this_host.devs[0].ipaddr, ip_src);
             int neib_index=0;
-            for(neib_index=0;neib_index<20;++neib_index){
-                if(this_host.neighbors[neib_index].ipaddr.s_addr==0){
-                    this_host.neighbors[neib_index].ipaddr.s_addr=ip_src.s_addr;
-                    break;
-                }else if(this_host.neighbors[neib_index].ipaddr.s_addr==ip_src.s_addr){
+            for(neib_index=0;neib_index<this_host.neighbor_num;++neib_index){
+                if(this_host.neighbors[neib_index].ipaddr.s_addr==ip_src.s_addr){
                     break;
                 }
             }
             if(rrep_ack->hello_index >= this_host.hello_head)
             {
                 this_host.neighbors[neib_index].host_stability_sequence[rrep_ack->hello_index % MAX_SEQUENCE_LEN] = rrep_ack->host_stability;
+				this_host.neighbors[neib_index].channel_hello_sequence[rrep_ack->channel][rrep_ack->hello_index % MAX_SEQUENCE_LEN] = 1;
             }
             this_host.neighbors[neib_index].channel_hello_remote_received[rrep_ack->channel] = rrep_ack->channel_hello_received;
+			// printf("[%.9f] remote %d received %d hellos from %d, now hello index is %d\n",Scheduler::instance().clock(), this_host.neighbors[neib_index].ipaddr.s_addr, this_host.neighbors[neib_index].channel_hello_remote_received[rrep_ack->channel], this_host.devs[0].ipaddr.s_addr,);
             return;
 		}
 		printf("---------------------------------------------------------------------------\n");
@@ -503,9 +503,9 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
     rev_rt = rt_table_find(rrep_orig);
 	
 	//modifiedy by mjw
-	/*if (rrep_orig.s_addr == DEV_IFINDEX(ifindex).ipaddr.s_addr) {
+	if (rrep_orig.s_addr == DEV_IFINDEX(ifindex).ipaddr.s_addr) {
 		goto deal_equal;
-	}*/
+	}
 
 
     if (!fwd_rt) {
@@ -589,11 +589,11 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 	   McWood <hjw_5@hotmail.com> for discovering this. */
 
 	// modified by mjw
-	/*#ifdef MJW_DEBUG
+	#ifdef MJW_DEBUG
 	printf("修复rrep 到达源节点\n");
-	#endif*/
+	#endif
 
-	/*#ifdef MJW_DEBUG
+	#ifdef MJW_DEBUG
 					{int ii;
 					for (ii = 0; ii < RT_TABLESIZE; ii++) {
 						list_t *pos1;
@@ -603,7 +603,7 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 									rt_u1->dest_addr.s_addr,rt_u1->next_hop.s_addr, rt_u1->state, rt_u1->flags);
 						}
 					}}
-	#endif*/
+	#endif
 	int i;
 	RERR* rerr = NULL;
 	struct in_addr rerr_unicast_dest;
@@ -616,7 +616,7 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 			if(rt_u->flags & RT_REPAIR)
 			{
 				//要不要考虑序列号呢
-				if((rt_u->dest_addr).s_addr == rrep_dest.s_addr /*&& 
+				if((rt_u->dest_addr).s_addr == rrep_dest.s_addr && (rt_u->flags&RT_REPAIR)/*&& 
 				(rt_u->dest_seqno == 0 ||
 	       		(int32_t) rrep_seqno > (int32_t) rt_u->dest_seqno ||
 	       		(rrep_seqno == rt_u->dest_seqno && rrep_new_hcnt < fwd_rt->hcnt))*/) {
@@ -630,7 +630,7 @@ void NS_CLASS rrep_process_lr(RREP * rrep, int rreplen, struct in_addr ip_src,
 							,rt_u->dest_addr.s_addr,rrep_new_hcnt,ip_src.s_addr);
 					#endif
 				} 
-				else if((rt_u->next_hop).s_addr == rrep_dest.s_addr) {
+				else if((rt_u->next_hop).s_addr == rrep_dest.s_addr && (rt_u->flags&RT_REPAIR)) {
 					printf("fuck2!!!!!! %d\n", ip_src.s_addr);
 
 					rt_table_update(rt_u, ip_src, rrep_new_hcnt-1+rt_u->hcnt, rt_u->dest_seqno,
@@ -965,9 +965,8 @@ void NS_CLASS rrep_process(RREP * rrep, int rreplen, struct in_addr ip_src,
 	if (rev_rt && rev_rt->state == VALID) {
         /*@ modify by chenjiyuan at 11.30 */
         //rrep_forward(rrep, rreplen, rev_rt, fwd_rt, --ip_ttl);
-        printf("[RREP-FORWARD]\n");
-		channelNum = rev_rt->channel;
-		printf("cost: %lf, channel: %d", rev_rt->cost, rev_rt->channel);
+        channelNum = rev_rt->channel;
+		printf("[RREP-FORWARD]cost: %lf, channel: %d, target: %d\n", rev_rt->cost, rev_rt->channel, rev_rt->dest_addr);
         rrep_forward(rrep, RREP_COST_SIZE, rev_rt, fwd_rt, --ip_ttl);
         /* end modified at 11.30 */
 	} else {

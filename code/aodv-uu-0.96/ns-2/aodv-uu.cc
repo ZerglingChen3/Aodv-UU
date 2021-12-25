@@ -150,7 +150,7 @@ tqtimer(this), ifqueue(0)
 	INIT_LIST_HEAD(&seekhead);
 	INIT_LIST_HEAD(&TQ);
 
-	local_repair = 1;
+	local_repair = 0;
 	/* Initialize data structures */
 	worb_timer.data = NULL;
 	worb_timer.used = 0;
@@ -298,6 +298,7 @@ void NS_CLASS packetFailed(Packet *p)
 	DEBUG(LOG_DEBUG, 0, "LINK FAILURE for next_hop=%s dest=%s uid=%d",
 		  ip_to_str(next_hop), ip_to_str(dest_addr), ch->uid());
 
+	printf("[FAILED FOR TRANSFORM PACKAGE]\n");
 	if (seek_list_find(dest_addr)) {
 		DEBUG(LOG_DEBUG, 0, "Ongoing route discovery, buffering packet...");
 		packet_queue_add(p, dest_addr);
@@ -421,7 +422,7 @@ void NS_CLASS recv(Packet *p, Handler *)
 		}
 
 #endif /* CONFIG_GATEWAY */
-		default:
+		default: 			
 			processPacket(p);   // Data path
 	}
 

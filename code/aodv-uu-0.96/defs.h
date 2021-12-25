@@ -91,7 +91,7 @@
 #define MAX_SEQUENCE_LEN 10
 #endif
 #ifndef MAX_CHANNEL_NUM
-#define MAX_CHANNEL_NUM 5
+#define MAX_CHANNEL_NUM 3
 #endif
 // end modified by XY
 /* Added by MSQ */

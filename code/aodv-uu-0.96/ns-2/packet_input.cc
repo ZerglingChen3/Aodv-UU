@@ -72,6 +72,7 @@ void NS_CLASS processPacket(Packet * p)
 	rreq_flags |= RREQ_GRATUITOUS;
     }
 
+	printf("check point 1\n");
     /* If the packet is a broadcast packet we just let it go
      * through... */
     if (dest_addr.s_addr == IP_BROADCAST ||
@@ -93,6 +94,8 @@ void NS_CLASS processPacket(Packet * p)
     rev_rt = rt_table_find(src_addr);
     fwd_rt = rt_table_find(dest_addr);
 
+
+	printf("check point 2\n");
 #ifdef CONFIG_GATEWAY
     /* Check if we have a route and it is an Internet destination (Should be
      * encapsulated and routed through the gateway). */
@@ -116,11 +119,14 @@ void NS_CLASS processPacket(Packet * p)
 	fwd_rt = rt_table_find(dest_addr);
 	pkt_flags |= PKT_ENC;
     }
+
 #endif /* CONFIG_GATEWAY */
 
     /* UPDATE TIMERS on active forward and reverse routes...  */
 
     rt_table_update_route_timeouts(fwd_rt, rev_rt);
+
+	printf("check point 4\n");
 
     /* OK, the timeouts have been updated. Now see if either: 1. The
        packet is for this node -> ACCEPT. 2. The packet is not for this
@@ -137,8 +143,12 @@ void NS_CLASS processPacket(Packet * p)
 	return;
 
     }
+
+	printf("check point 10\n");
     if (!fwd_rt || fwd_rt->state == INVALID ||
 	(fwd_rt->hcnt == 1 && (fwd_rt->flags & RT_UNIDIR))) {
+
+	printf("check point 5\n");
 
 	/* Check if the route is marked for repair or is INVALID. In
 	 * that case, do a route discovery. */
@@ -146,6 +156,8 @@ void NS_CLASS processPacket(Packet * p)
 	    goto route_discovery;
 
 	if (ch->direction() == hdr_cmn::UP) {
+
+		printf("check point 6\n");
 
 	    struct in_addr rerr_dest;
 	    RERR *rerr;
@@ -209,9 +221,9 @@ void NS_CLASS processPacket(Packet * p)
 	struct hdr_cmn *ch = HDR_CMN(p);
 	struct in_addr now_addr = this_host.devs[0].ipaddr;
 	if(ch->ptype() == PT_AODVUU) {
-		printf("[%.9f] %d send an aodv message, next_hop:%d, channelNum:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr, p->channel);
+		printf("[%.9f] %d send an aodv message, next_hop:%d, channelNum:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr, fwd_rt->channel);
 	} else {
-		printf("[%.9f] %d send an aplication message, next_hop:%d, channelNum:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr, p->channel);
+		printf("[%.9f] %d send an aplication message, next_hop:%d, channelNum:%d\n", Scheduler::instance().clock(), now_addr, fwd_rt->next_hop.s_addr, fwd_rt->channel);
 	}
 
 	/* When forwarding data, make sure we are sending HELLO messages */

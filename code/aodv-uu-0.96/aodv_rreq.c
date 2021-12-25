@@ -1052,6 +1052,7 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
 	struct in_addr now_addr = this_host.devs[0].ipaddr;
 
 	printf("[RREQ_ROUTE_DISCOVERY] now_addr: %d, dest_addr: %d, flags: %d\n", now_addr, dest_addr, flags);
+	printf("yea! we get in\n");
 	/*#ifdef MJW_DEBUG
 	printf("开启route_discovery\n");
 	#endif*/
@@ -1066,7 +1067,7 @@ void NS_CLASS rreq_route_discovery(struct in_addr dest_addr, u_int8_t flags,
     gettimeofday(&now, NULL);
 
     if (seek_list_find(dest_addr)) {
-		printf("[RREQ_ROUTE_ABORT]\n");
+		printf("[RREQ_ROUTE_DESTORY]\n");
 		return;
 	}
 
@@ -1222,7 +1223,7 @@ void NS_CLASS rreq_local_repair(rt_table_t * rt, struct in_addr src_addr,
 	struct in_addr send_dest;
 	send_dest.s_addr = AODV_BROADCAST;
 	aodv_socket_send((AODV_msg *) rreq_to_find, send_dest
-	, RREQ_EXT_OFFSET(rreq_to_find), max_ttl/*+LOCAL_ADD_TTL*/, &DEV_NR(tosend_i));
+	, RREQ_EXT_OFFSET(rreq_to_find), max_ttl+1, &DEV_NR(tosend_i));
 	#ifdef MJW_DEBUG
 		printf("%d, udest_count:%d 广播rreq的大小：%d\n",RREQ_SIZE ,rreq_to_find->dest_count ,RREQ_EXT_OFFSET(rreq_to_find));
 	#endif

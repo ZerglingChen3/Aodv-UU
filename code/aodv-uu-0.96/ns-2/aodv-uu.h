@@ -276,65 +276,29 @@ inline int NS_CLASS ifindex2devindex(unsigned int ifindex)
 
 /*@ modified by chenjiyuan:11.23*/
 inline double NS_CLASS getCost(struct in_addr src_addr, struct in_addr dest_addr, int channel) {
+	// printf("get in abcdefg!!\n");
+	printf("this host is %d, wanna find cost to dest: %d through channel:%d\n",this_host.devs[0].ipaddr.s_addr, src_addr.s_addr, channel);
 	int src = src_addr.s_addr;
 	int dst = dest_addr.s_addr;
 
-#if 0
+	printf("[FROM %d TO %d]\n", src_addr.s_addr, dest_addr.s_addr);
+// #if 0
     //if(0)
     {//modified by XY
         int index=0;
-        for(index = 0;index < 20; ++index)
+        for(index = 0;index < this_host.neighbor_num; ++index)
         {
-            if(this_host.neighbors[index].ipaddr.s_addr == dst){
-                break;
-            }
-            if(index == 19)
-            {
-                printf("ERROR!!!");
-                return -1;
-            }
+            if(this_host.neighbors[index].ipaddr.s_addr == src){
+                return min(100000.0, -log(max(0.000001, this_host.neighbors[index].channel_cost[channel])));
+            }else{
+				printf("has neighbor %d in this host, his cost through channel is %f\n",this_host.neighbors[index].ipaddr.s_addr, this_host.neighbors[index].channel_cost[channel]);
+			}
         }
-        return this_host.neighbors[index].channel_cost[channel];
-
+		printf("error! can't find dest!\n");
+		return 100000.0;
     }
-#endif
-	
-if (src == 0 && dst == 1 && channel == 0)
-        return 100;
-if (src == 1 && dst == 0 && channel == 0)
-        return 100;
-if (src == 0 && dst == 1 && channel == 1)
-        return 2000;
-if (src == 1 && dst == 0 && channel == 1)
-        return 2000;
-if (src == 0 && dst == 1 && channel == 2)
-        return 3000;
-if (src == 1 && dst == 0 && channel == 2)
-        return 3000;
-if (src == 1 && dst == 2 && channel == 0)
-        return 6000;
-if (src == 2 && dst == 1 && channel == 0)
-        return 6000;
-if (src == 1 && dst == 2 && channel == 1)
-        return 100;
-if (src == 2 && dst == 1 && channel == 1)
-        return 100;
-if (src == 1 && dst == 2 && channel == 2)
-        return 3000;
-if (src == 2 && dst == 1 && channel == 2)
-        return 3000;
-if (src == 2 && dst == 3 && channel == 0)
-        return 1000;
-if (src == 3 && dst == 2 && channel == 0)
-        return 1000;
-if (src == 2 && dst == 3 && channel == 1)
-        return 3000;
-if (src == 3 && dst == 2 && channel == 1)
-        return 3000;
-if (src == 2 && dst == 3 && channel == 2)
-        return 10;
-if (src == 3 && dst == 2 && channel == 2)
-        return 10;
+// #endif
+
 	//return 1.0;
 }
 /* end modified*/

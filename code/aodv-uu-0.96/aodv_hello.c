@@ -119,9 +119,14 @@ void NS_CLASS hello_send(void *arg)
                 // update stability sequence
                 this_host.stability_sequence[this_host.hello_tail % MAX_SEQUENCE_LEN]=this_host.stability.isStable;
 
+                // update every channel cost
+				printf("------------cost update begin\n");
+                printf("%d has sent %d hellos\n", this_host.devs[0].ipaddr, this_host.hello_tail);
+
                 // move head and tail pointer
                 int head=this_host.hello_head;
                 int tail=this_host.hello_tail;
+#if 0
                 printf("[%.9f] %d printing hello received situation, hello_tail is %d\n", Scheduler::instance().clock(), this_host.devs[0].ipaddr.s_addr, this_host.hello_tail);
                 for(int i = 0; i < this_host.neighbor_num; ++i){
                     printf("now is about %d:\n", this_host.neighbors[i].ipaddr.s_addr);
@@ -133,26 +138,32 @@ void NS_CLASS hello_send(void *arg)
                         printf("\n");
                     }
                 }
+#endif
+                for(int i = 0; i< this_host.neighbor_num; ++i){
+                    for(int j = 0; j < MAX_CHANNEL_NUM; ++j){
+                        printf("\t%dto%d_channel%d_%d: %d\n", this_host.devs[0].ipaddr.s_addr, this_host.neighbors[i].ipaddr.s_addr, j, this_host.hello_tail, this_host.neighbors[i].channel_hello_sequence[j][this_host.hello_tail % MAX_SEQUENCE_LEN]);
+                    }
+                }
 
-                // update every channel cost
-				printf("------------cost update begin\n");
-                printf("%d has sent %d hellos\n", this_host.devs[0].ipaddr, this_host.hello_tail);
 				for(int neib_index=0; neib_index < this_host.neighbor_num; ++neib_index){
                     printf("\tthe neighbor ip is: %d\n", this_host.neighbors[neib_index].ipaddr.s_addr);
-					for (int channel = 0; channel < 5; ++channel){
+					for (int channel = 0; channel < MAX_CHANNEL_NUM; ++channel){
                         printf("\t\tnow channel is: %d\n", channel);
 						if (head % MAX_SEQUENCE_LEN == (tail + 1) % MAX_SEQUENCE_LEN){
 							double deliver_rate = 0;
 							double expect_connected_possibility = 0;
+                            double predict_connect_time = 1;
 							double status_change_possibility = 0;
 							{ // deliver rate
                                 double self_sent=this_host.hello_tail;
                                 double self_received=this_host.neighbors[neib_index].channel_hello_self_received[channel];
                                 double remote_sent=this_host.neighbors[neib_index].channel_hello_remote_sent;
                                 double remote_received=this_host.neighbors[neib_index].channel_hello_remote_received[channel];
-								double positive_rate = remote_received / self_sent;
-								double negative_rate = self_received / remote_sent;
+								double positive_rate = self_sent > 0 ? remote_received / self_sent : 0;
+								double negative_rate = remote_sent > 0 ? self_received / remote_sent : 0;
                                 deliver_rate = positive_rate * negative_rate;
+								if(deliver_rate > 1)
+									deliver_rate = 1.0;
                                 printf("\t\t\tdeliver rate:%f\n", deliver_rate);
                                 printf("\t\t\t\tpositive rate: %f / %f = %f\n", remote_received, self_sent, positive_rate);
                                 printf("\t\t\t\tnegative rate: %f / %f = %f\n", self_received, remote_sent, negative_rate);
@@ -160,7 +171,10 @@ void NS_CLASS hello_send(void *arg)
 							{ // arma model
 								// use time interval every two hello msg
 								//todo: get p, q from model
-                                double predict_connect_time = 1;
+                                int* hello_series = this_host.neighbors[neib_index].channel_hello_sequence[channel];
+                                predict_connect_time = 0.886773 + 0.039934 * hello_series[tail % MAX_SEQUENCE_LEN] +
+                                    0.706171 * hello_series[(tail - 1) % MAX_SEQUENCE_LEN] +
+                                    0.080530 * hello_series[(tail - 2) % MAX_SEQUENCE_LEN];
                                 printf("\t\t\tpredict connect time:%f\n", predict_connect_time);
 							}
 							{ //
@@ -174,20 +188,27 @@ void NS_CLASS hello_send(void *arg)
                                 //printf("stable_count: %d\n", stable_count);
 							}
 							// use status change possibility temporarily
-							this_host.neighbors[neib_index].channel_cost[channel] = 0.33 * deliver_rate + 0.66 * status_change_possibility;
-                            printf("[%.9f] %d to %d through channel %d cost:%f\n", Scheduler::instance().clock(), this_host.devs[0].ipaddr, this_host.neighbors[neib_index].ipaddr, channel, this_host.neighbors[neib_index].channel_cost[channel]);
+							this_host.neighbors[neib_index].channel_cost[channel] = 0.33 * deliver_rate + 0.33 * predict_connect_time + 0.33 * status_change_possibility;
+                            printf("\t%d to %d through channel %d cost:%f\n", this_host.devs[0].ipaddr, this_host.neighbors[neib_index].ipaddr, channel, this_host.neighbors[neib_index].channel_cost[channel]);
 						}
 						else
-						{
-							int success_count = 0;
-							int count = 0;
-                            for(int now_index = head; now_index < tail; ++now_index)
-							{
-								success_count += this_host.neighbors[neib_index].channel_hello_sequence[channel][now_index % MAX_SEQUENCE_LEN];
-								count++;
-							}
-							this_host.neighbors[neib_index].channel_cost[channel] = 1.0 * success_count / count;
-						}
+                        { // deliver rate
+                            double deliver_rate = 0;
+                            double self_sent=this_host.hello_tail;
+                            double self_received=this_host.neighbors[neib_index].channel_hello_self_received[channel];
+                            double remote_sent=this_host.neighbors[neib_index].channel_hello_remote_sent;
+                            double remote_received=this_host.neighbors[neib_index].channel_hello_remote_received[channel];
+                          	double positive_rate = self_sent > 0 ? remote_received / self_sent : 0;
+							double negative_rate = remote_sent > 0 ? self_received / remote_sent : 0;
+                            deliver_rate = positive_rate * negative_rate;
+							if(deliver_rate > 1)
+								deliver_rate = 1.0;
+                            printf("\t\t\tdeliver rate:%f\n", deliver_rate);
+                            printf("\t\t\t\tpositive rate: %f / %f = %f\n", remote_received, self_sent, positive_rate);
+                            printf("\t\t\t\tnegative rate: %f / %f = %f\n", self_received, remote_sent, negative_rate);
+                            this_host.neighbors[neib_index].channel_cost[channel] = deliver_rate < 0.01 ? 0.01 : deliver_rate;
+                            printf("\t%d to %d through channel %d cost:%f\n", this_host.devs[0].ipaddr, this_host.neighbors[neib_index].ipaddr, channel, this_host.neighbors[neib_index].channel_cost[channel]);
+                        }
 					}
 				}
                 if (head % MAX_SEQUENCE_LEN == (tail + 1) % MAX_SEQUENCE_LEN)
@@ -315,10 +336,10 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 		}
 		
 		int channel = hello->channel;
-        printf("[%.9f] %d received Hello from %d through channel: %d\n", Scheduler::instance().clock(), now_addr, hello_dest, channel);
+        int hello_index = hello->hello_sent;
+        printf("[%.9f] %d received Hello from %d through channel: %d hello index is %d\n", Scheduler::instance().clock(), now_addr, hello_dest, channel, hello_index);
 
 		this_host.neighbors[neib_index].channel_hello_self_received[channel]++;
-		this_host.neighbors[neib_index].channel_hello_sequence[channel][this_host.hello_tail % MAX_SEQUENCE_LEN] = 1;
         this_host.neighbors[neib_index].channel_hello_remote_sent=hello->hello_sent;
         printf("remote has sent %d hello(s)\n", hello->hello_sent);
 
@@ -331,8 +352,9 @@ void NS_CLASS hello_process(RREP * hello, int rreplen, unsigned int ifindex)
 		hello_ack->channel_hello_received = 
             this_host.neighbors[neib_index].channel_hello_self_received[channel];
         hello_ack->host_stability = this_host.stability.isStable;
+        channelNum = hello->channel;
 		aodv_socket_send((AODV_msg *)hello_ack, hello_dest, RREP_ACK_SIZE, MAXTTL, &DEV_IFINDEX(ifindex));
-		printf("[%.9f] send hello_ack:%x to dest:%d, through channel:%d\n", Scheduler::instance().clock(), hello_ack, hello_dest, channel);
+		printf("[%.9f] %d send hello_ack:%x to dest:%d, through channel:%d hello index: %d\n", Scheduler::instance().clock(), this_host.devs[0].ipaddr.s_addr, hello_ack, hello_dest, channel, hello->hello_sent);
 	}
 
     rt = rt_table_find(hello_dest); //todo: set channel

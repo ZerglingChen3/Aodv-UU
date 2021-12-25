@@ -219,6 +219,8 @@ void NS_CLASS route_delete_timeout(void *arg)
 	if (!rt)
 		return;
 
+	printf("[RT DELETE] now: %d, dest_addr : %d, channel: %d, cost: %lf, next: %d\n", DEV_IFINDEX(ifindex).ipaddr.s_addr, rt->dest_addr, rt->channel, rt->cost, rt->next_hop);
+
 	DEBUG(LOG_DEBUG, 0, "%s", ip_to_str(rt->dest_addr));
 
 	rt_table_delete(rt);

@@ -10,7 +10,7 @@ set val(ifqlen) 50 ;# max packet in ifq
 set val(rp) AODVUU ;# routing protocol
 set val(x) 1300 ;# X dimension of topography
 set val(y) 1300 ;# Y dimension of topography
-set val(stop) 42 ;# nam stop time
+set val(stop) 35 ;# nam stop time
 set val(nn) 15 ;# number of mobilenodes
 set val(nc) 3 ;# number of channels
 set val(ni) 3 ;# number of interfaces, <= number of channels
@@ -63,6 +63,7 @@ for {set i 14} {$i < 15} {incr i} {
   set n($i) [$ns_ node]
   $god_ new_node $n($i)
 }
+
 puts "created nodes"
 set nodedist 250
 
@@ -152,25 +153,42 @@ $cbr0 attach-agent $udp0
 $cbr0 set packetSize_ $pktsize
 $cbr0 set interval_ $pktrate
 $ns_ at 2.000000 "$cbr0 start"
-$ns_ at 20.000000 "$cbr0 stop"
+$ns_ at 17.000000 "$cbr0 stop"
 
 set udp1 [new Agent/UDP]
-$ns_ attach-agent $n(4) $udp1
+$ns_ attach-agent $n(3) $udp1
 set sink1 [new Agent/Null]
-$ns_ attach-agent $n(9) $sink1
+$ns_ attach-agent $n(11) $sink1
 $ns_ connect $udp1 $sink1
 set cbr1 [new Application/Traffic/CBR]
 $cbr1 attach-agent $udp1
 $cbr1 set packetSize_ $pktsize
 $cbr1 set interval_ $pktrate
-$ns_ at 20.000000 "$cbr1 start"
-$ns_ at 32.000000 "$cbr1 stop"
+$ns_ at 15.000000 "$cbr1 start"
+$ns_ at 23.000000 "$cbr1 stop"
 
-$ns_ at 8.000000 "$n(14) setdest 100 600 2000"
-$ns_ at 8.500000 "$n(14) setdest 100 200 2000"
-$ns_ at 12.000000 "$n(10) setdest 1250 500 2000"
-$ns_ at 17.000000 "$n(14) setdest 100 600 2000"
-$ns_ at 17.500000 "$n(14) setdest 100 1250 2000"
+set udp2 [new Agent/UDP]
+$ns_ attach-agent $n(4) $udp2
+set sink2 [new Agent/Null]
+$ns_ attach-agent $n(9) $sink2
+$ns_ connect $udp2 $sink2
+set cbr2 [new Application/Traffic/CBR]
+$cbr2 attach-agent $udp2
+$cbr2 set packetSize_ $pktsize
+$cbr2 set interval_ $pktrate
+$ns_ at 25.000000 "$cbr2 start"
+$ns_ at 35.000000 "$cbr2 stop"
+
+$ns_ at 6.000000 "$n(14) setdest 100 600 2000"
+$ns_ at 6.500000 "$n(14) setdest 100 200 2000"
+$ns_ at 10.000000 "$n(10) setdest 1250 500 2000"
+$ns_ at 14.000000 "$n(14) setdest 100 600 2000"
+$ns_ at 14.500000 "$n(14) setdest 100 1250 2000"
+$ns_ at 20.000000 "$n(14) setdest 300 1000 2000"
+$ns_ at 24.000000 "$n(14) setdest 100 1250 2000"
+$ns_ at 24.000000 "$n(10) setdest 950 450 2000"
+$ns_ at 24.000000 "$n(8) setdest 1200 200 2000"
+$ns_ at 28.000000 "$n(9) setdest 1050 350 2000"
 
 set last_node_id [expr $val(nn)-1]
 proc finish {} {

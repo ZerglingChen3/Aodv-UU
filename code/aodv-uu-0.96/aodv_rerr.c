@@ -63,14 +63,12 @@ NS_STATIC struct rerr_record *NS_CLASS rerr_record_insert(struct in_addr
     rec->rerr_id = rerr_id;
 	rec->last_addr = last_addr;
 
-    //timer_init(&rec->rec_timer, &NS_CLASS rreq_record_timeout, rec);
+	timer_init(&rec->rec_timer, &NS_CLASS rerr_record_timeout, rec);
 
     list_add(&rerr_records, &rec->l);
 
-    //DEBUG(LOG_INFO, 0, "Buffering RREQ %s rreq_id=%lu time=%u",
-	//  ip_to_str(orig_addr), rerr_id, PATH_DISCOVERY_TIME);
+    timer_set_timeout(&rec->rec_timer, RERR_TIME);
 
-    //timer_set_timeout(&rec->rec_timer, PATH_DISCOVERY_TIME);
     return rec;
 }
 
@@ -132,6 +130,14 @@ void NS_CLASS rerr_add_udest(RERR * rerr, struct in_addr udest,
     rerr->dest_count++;
 }
 
+void NS_CLASS rerr_record_timeout(void *arg)
+{
+	printf("%.9f, RERR_RECORD_TIMEOUT",Scheduler::instance().clock());
+    struct rerr_record *rec = (struct rerr_record *) arg;
+
+    list_detach(&rec->l);
+    free(rec);
+}
 
 void NS_CLASS rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 			   struct in_addr ip_dst)

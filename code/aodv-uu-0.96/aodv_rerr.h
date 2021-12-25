@@ -72,7 +72,7 @@ struct rerr_record {
     struct in_addr orig_addr;	/* Source of the RRER */
     u_int32_t rerr_id;		/* RERR's broadcast ID */
     u_int32_t last_addr;
-    //struct timer rec_timer;
+    struct timer rec_timer;
 };
 
 #define RERR_UDEST_SIZE sizeof(RERR_udest)
@@ -90,6 +90,7 @@ RERR *rerr_create(u_int8_t flags, struct in_addr dest_addr,
 void rerr_add_udest(RERR * rerr, struct in_addr udest, u_int32_t udest_seqno);
 void rerr_process(RERR * rerr, int rerrlen, struct in_addr ip_src,
 		  struct in_addr ip_dst);
+void rerr_record_timeout(void *arg);
 
 //mjw
 #ifdef NS_PORT
